@@ -121,3 +121,28 @@
 | … | | | | | |
 
 > 变更版本 `change-v2` 需**全量重跑 C1–C10 + E1–E10**，并追加变更新增用例（见 `docs/change-impact.md`）。
+
+---
+
+## 4. v1.1（CR-01）新增验收用例与结果
+
+| 编号 | 场景 | 预期 | 自动化 | 结果（change-v2） |
+|---|---|---|---|---|
+| CR-AC1 | 直接型容量 1，第二人报名 | 201，`WAITLISTED`，位次 1 | `smoke_api.py` CR-AC1 | 通过 |
+| CR-AC2 | 候补上限 1 已占满，第三人报名 | 409 `WAITLIST_FULL` | `smoke_api.py` CR-AC2 | 通过 |
+| CR-AC3 | 已通过者取消 | 候补第一位自动 `APPROVED` 并收到「补位」通知 | `smoke_api.py` CR-AC3、`test_waitlist.test_cancel_promotes_first_waitlisted` | 通过 |
+| CR-AC4 | 候补学生取消 | `CANCELLED`，候补数 −1，名额不变 | `smoke_api.py` CR-AC4、`test_waitlist.test_cancel_waitlisted` | 通过 |
+| CR-AC5 | 查询统计 | 返回 `waitlisted`，`approved`/`remaining` 口径不变 | `smoke_api.py` CR-AC5 | 通过 |
+| CR-AC6 | 全量回归 | C1–C10 + E1–E10 全过 | `tests/run_tests.py` + `smoke_api.py` | 通过（单测 41/41、冒烟 70/70） |
+
+**补充边界用例（单元测试）**
+
+| 场景 | 结果 |
+|---|---|
+| 候补上限 0（不开放候补）仍返回 `CAPACITY_FULL` | 通过 |
+| 候补状态计入「有效报名」，重复报名返回 `ALREADY_REGISTERED` | 通过 |
+| 审核型活动满员仍进入 `PENDING`，不产生候补 | 通过 |
+| 候补位次按报名顺序递增，补位后不重排其他人 | 通过 |
+
+执行环境：Windows 10 + Python 3.12.7（便携版），SQLite 3.45.3。
+执行时间：2026-11-19。

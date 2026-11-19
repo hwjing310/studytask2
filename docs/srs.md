@@ -148,24 +148,32 @@
 
 ## 7. 报名状态模型
 
+> v1.1（CR-01 候补）在此基础上新增 `WAITLISTED`，详见 §10 与 `docs/uml/state-registration.md`。
+
 ```
-            (直接型报名)
+            (直接型报名，未满)
   [*] ────────────────► APPROVED
+            (直接型报名，已满且候补未满)
+  [*] ────────────────► WAITLISTED ──有人取消自动补位──► APPROVED
         (审核型报名)
   [*] ────────────────► PENDING ──批准(名额足)──► APPROVED
                           │  └────拒绝──────────► REJECTED
                           └────学生取消─────────► CANCELLED
   APPROVED ────学生取消───► CANCELLED
+  WAITLISTED ──学生取消───► CANCELLED
 ```
 
 | 当前状态 | 事件 | 目标状态 | 附加条件 |
 |---|---|---|---|
 | — | 直接型活动报名 | APPROVED | 未开始；无名额不足；无有效报名 |
+| — | 直接型活动报名（已满） | WAITLISTED | 未开始；无有效报名；候补上限 > 0 且未满 |
 | — | 审核型活动报名 | PENDING | 未开始；无有效报名 |
 | PENDING | 管理员批准 | APPROVED | 剩余名额 ≥ 1 |
 | PENDING | 管理员拒绝 | REJECTED | — |
 | PENDING | 学生取消 | CANCELLED | 本人操作 |
-| APPROVED | 学生取消 | CANCELLED | 本人操作 |
+| WAITLISTED | 有人取消已通过报名 | APPROVED | 该学生为候补序列最小者 |
+| WAITLISTED | 学生取消候补 | CANCELLED | 本人操作；不释放名额 |
+| APPROVED | 学生取消 | CANCELLED | 本人操作；触发补位 |
 | REJECTED / CANCELLED | — | 终态 | 可再次申请（新建记录） |
 
 ---
@@ -179,3 +187,10 @@
 
 ## 9. 验收基线
 初始版本以 `docs/test-cases.md` 的 C1–C10 为最低验收集；全部通过后打标签 `baseline-v1`。
+
+## 10. 版本记录
+
+| 版本 | 日期 | 变更 |
+|---|---|---|
+| v1.0 | 2026-11-19 | 初始版本，对应 `baseline-v1` |
+| v1.1 | 2026-11-19 | CR-01 候补队列：新增 `WAITLISTED` 状态、活动级 `waitlist_capacity`、取消后自动补位；统计新增 `waitlisted`。详见 `docs/change-request.md` 与 `docs/change-impact.md` |

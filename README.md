@@ -91,6 +91,8 @@ npm run build    :: 产出 frontend/dist，由后端同源托管
 | P2-F07 | 站内通知 | 报名与审核结果写入站内消息列表 |
 | P2-F08 | 统计 | 按活动查看已通过数、待审核数、剩余名额 |
 
+> **v1.1（CR-01）新增**：直接型活动满员后进入**候补队列**（活动级 `waitlist_capacity`，默认 0 表示不开放）；已通过者取消时，候补按位次自动补位并通知。详见 `docs/change-request.md` 与 `docs/change-impact.md`。
+
 ## 4. 设计要点（详见 docs/）
 
 - **策略模式**：`RegistrationPolicy` 抽象「报名如何处理」，`DirectApprovalPolicy` 与 `ManualReviewPolicy` 为两种实现；名额检查作为公共规则留在 `RegistrationService`。

@@ -121,4 +121,23 @@
 
 ---
 
+## 阶段 8：实现 change-v2
+
+### 2026-11-19 · CR-01 候补队列落地
+- 我的意图：在 `change/cr-01` 分支上按影响分析实现，不重建项目、不引入依赖，并保留可对比的 Git 差异。
+- AI 输出摘要：
+  - 迁移：`activities.waitlist_capacity`、`registrations.waitlist_position`；因 SQLite 不能改 CHECK，用事务重建 `registrations` 表并保留数据（在真实旧库上验证通过）；
+  - 领域/服务：满员转候补、候补上限、取消已通过后按序补位（含 `registration.promoted` 事件）、统计加 `waitlisted`；
+  - 前端：候补状态与位次、取消候补、管理端候补上限与统计；
+  - 测试：`test_waitlist.py` 8 例、冒烟新增 18 条断言；全量 41 单测 + 70 冒烟全部通过。
+- 我的判断：采纳。策略层与 Web 层零改动，符合影响分析的预测。
+- 返工（记录下来，写进报告）：
+  1) `find_active` 未包含 `WAITLISTED`，导致重复报名落到数据库唯一索引异常，而非 409；
+  2) 详情页按钮用 `open` 判断，满员时被禁用，改为 `open || hasWaitlist`。
+- 指标：新增类 0；核心业务文件 3；总改动 22 文件 / 711 行；回归失败 0。
+- 影响的文件：`project/**`、`frontend/src/**`、`tests/**`、`docs/{srs,change-impact}.md`、`docs/uml/{class-diagram,state-registration}.*`
+- 对应 Git 提交：`change-v2`
+
+---
+
 <!-- 后续阶段在此追加 -->

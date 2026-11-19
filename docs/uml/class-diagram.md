@@ -4,7 +4,7 @@
 
 领域模型与策略/通知/服务/仓储/Web 五层的静态结构。左半部分是业务概念，右半部分是技术实现；箭头的方向就是依赖方向，全部由外向内指向抽象。
 
-``mermaid
+```mermaid
 classDiagram
   direction TB
 
@@ -17,10 +17,12 @@ classDiagram
       +String location
       +int capacity
       +String policyType
+      +int waitlistCapacity
       +String deletedAt
       +isOpen(now) bool
       +isDeleted() bool
       +isFull(approvedCount) bool
+      +isWaitlistFull(waitlistedCount) bool
     }
     class Student {
       +String studentId
@@ -33,6 +35,7 @@ classDiagram
       +String activityId
       +String studentId
       +String status
+      +int waitlistPosition
       +String createdAt
       +String updatedAt
       +isActive() bool
@@ -50,6 +53,7 @@ classDiagram
     class ActivityStats {
       +int approved
       +int pending
+      +int waitlisted
       +int remaining
     }
   }
@@ -235,14 +239,19 @@ classDiagram
   MessageHandler --> MessageService
   ActivityHandler ..> ApiError
   RegistrationHandler ..> ApiError
-``
-
+```
 ## 要点
-- - 领域层（Domain）不依赖任何其他层，Activity/Registration 自带 isOpen、isActive、canCancel 等判定，避免贫血模型。
-- - 策略（Policy）：RegistrationPolicy 只有一个方法 decide(ctx)，RegistrationService 只依赖接口；PolicyFactory 负责按活动配置选实现。
-- - 通知（Notify）：RegistrationService 只向 EventBus 发布 RegistrationEvent，不直接依赖 MessageRepository；InboxNotifier 作为订阅者写消息，写失败由 NotifyFailureRepository 留痕。
-- - 服务层（Service）只依赖仓储**接口**，SqliteRepositories 是唯一实现，替换存储不影响业务代码。
-- - Web 层（Web）只依赖服务层，Router 按路径分发到 Handler；错误统一走 ApiError。
-- - 关键约束：RegistrationService 对 Activity/Registration 只做公共规则检查（名额、重复、是否开始），业务差异交给策略。
+- 领域层（Domain）不依赖任何其他层，Activity/Registration 自带 isOpen、isActive、canCancel 等判定，避免贫血模型。
+- 策略（Policy）：RegistrationPolicy 只有一个方法 decide(ctx)，RegistrationService 只依赖接口；PolicyFactory 负责按活动配置选实现。
+- 通知（Notify）：RegistrationService 只向 EventBus 发布 RegistrationEvent，不直接依赖 MessageRepository；InboxNotifier 作为订阅者写消息，写失败由 NotifyFailureRepository 留痕。
+- 服务层（Service）只依赖仓储**接口**，SqliteRepositories 是唯一实现，替换存储不影响业务代码。
+- Web 层（Web）只依赖服务层，Router 按路径分发到 Handler；错误统一走 ApiError。
+- 关键约束：RegistrationService 对 Activity/Registration 只做公共规则检查（名额、候补、重复、是否开始），业务差异交给策略。
+
+## v1.1（CR-01 候补）变更点
+
+- `Activity` 增加 `waitlistCapacity` 与 `isWaitlistFull`；`Registration` 增加 `waitlistPosition`；`ActivityStats` 增加 `waitlisted`。
+- **没有新增生产类**：候补是容量规则的延伸，判定仍落在 `RegistrationService`（见 `docs/change-impact.md` §3）。
+- 类之间的依赖方向未变，说明本次变更没有破坏分层结构。
 
 > 生成方式：Mermaid 源经 draw.io CLI 转换为 .drawio，后续如调整请在 draw.io 中编辑并同步本页。

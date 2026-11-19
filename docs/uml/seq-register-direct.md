@@ -4,7 +4,7 @@
 
 学生报名直接型活动的完整调用链，含三条前置校验的失败分支。
 
-``mermaid
+```mermaid
 sequenceDiagram
   autonumber
   actor S as 学生
@@ -56,11 +56,10 @@ sequenceDiagram
       UI-->>S: 显示「已通过」
     end
   end
-``
-
+```
 ## 要点
-- - 前置校验顺序：活动存在/未删除 → 未开始 → 无有效报名 → 名额充足；每步失败都返回明确的错误码。
-- - 策略只回答「通过还是待审核」，不负责名额；因此 DirectApprovalPolicy.decide 返回 APPROVED 是纯决策，没有副作用。
-- - 报名先落库，再发布事件，最后写消息；写消息发生在报名提交之后（对应 BR6 的事务边界）。
+- 前置校验顺序：活动存在/未删除 → 未开始 → 无有效报名 → 名额充足；每步失败都返回明确的错误码。
+- 策略只回答「通过还是待审核」，不负责名额；因此 DirectApprovalPolicy.decide 返回 APPROVED 是纯决策，没有副作用。
+- 报名先落库，再发布事件，最后写消息；写消息发生在报名提交之后（对应 BR6 的事务边界）。
 
 > 生成方式：Mermaid 源经 draw.io CLI 转换为 .drawio，后续如调整请在 draw.io 中编辑并同步本页。
