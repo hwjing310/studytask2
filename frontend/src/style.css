@@ -63,6 +63,7 @@ a { color: var(--brand); text-decoration: none; }
 .status.APPROVED { background: #d1fae5; color: #065f46; }
 .status.REJECTED { background: #fee2e2; color: #991b1b; }
 .status.CANCELLED { background: #e5e7eb; color: #4b5563; }
+.status.WAITLISTED { background: #e0e7ff; color: #3730a3; }
 
 button.btn {
   border: 1px solid var(--brand); background: var(--brand); color: #fff;

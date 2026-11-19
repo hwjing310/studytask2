@@ -30,6 +30,9 @@ class ActivityRepository(ABC):
     @abstractmethod
     def count_pending(self, activity_id: str) -> int: ...
 
+    @abstractmethod
+    def count_waitlisted(self, activity_id: str) -> int: ...
+
 
 class RegistrationRepository(ABC):
     @abstractmethod
@@ -54,6 +57,12 @@ class RegistrationRepository(ABC):
 
     @abstractmethod
     def list_pending(self, activity_id: str | None = None) -> list[Registration]: ...
+
+    @abstractmethod
+    def next_waitlist_position(self, activity_id: str) -> int: ...
+
+    @abstractmethod
+    def first_waitlisted(self, activity_id: str) -> Optional[Registration]: ...
 
 
 class StudentRepository(ABC):

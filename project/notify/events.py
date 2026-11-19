@@ -33,6 +33,7 @@ class RegistrationEvent(DomainEvent):
     student_id: str = ""
     status: str = ""
     activity_title: str = ""
+    waitlist_position: int | None = None
 
     @staticmethod
     def build(
@@ -43,15 +44,18 @@ class RegistrationEvent(DomainEvent):
         status: str,
         activity_title: str,
         version: int = 1,
+        event_type: str = "registration.status_changed",
+        waitlist_position: int | None = None,
     ) -> "RegistrationEvent":
         return RegistrationEvent(
             event_id=f"{registration_id}:{status}:v{version}",
-            event_type="registration.status_changed",
+            event_type=event_type,
             registration_id=registration_id,
             activity_id=activity_id,
             student_id=student_id,
             status=status,
             activity_title=activity_title,
+            waitlist_position=waitlist_position,
         )
 
 

@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { get, post } from '../api'
 import { go, toast, state } from '../store'
 
@@ -9,6 +9,12 @@ const activity = ref(null)
 const stats = ref(null)
 const error = ref('')
 const busy = ref(false)
+
+const hasWaitlist = computed(() => {
+  const a = activity.value
+  if (!a) return false
+  return a.waitlist_capacity > 0 && (stats.value?.remaining ?? 1) === 0 && !a.deleted_at
+})
 
 async function load() {
   error.value = ''
@@ -25,7 +31,10 @@ async function register() {
   error.value = ''
   try {
     const res = await post(`/activities/${props.activityId}/registrations`)
-    toast(res.status === 'APPROVED' ? '报名成功，已通过' : '已提交，等待管理员审核')
+    if (res.status === 'APPROVED') toast('报名成功，已通过')
+    else if (res.status === 'PENDING') toast('已提交，等待管理员审核')
+    else if (res.status === 'WAITLISTED') toast(`名额已满，已进入候补（第 ${res.waitlist_position} 位）`)
+    else toast('已提交')
     await load()
   } catch (err) {
     error.value = err.message
@@ -62,12 +71,13 @@ watch(() => props.activityId, load)
       <div class="stat">
         <div><b>{{ stats?.approved ?? '-' }}</b>已通过</div>
         <div><b>{{ stats?.pending ?? '-' }}</b>待审核</div>
+        <div><b>{{ stats?.waitlisted ?? '-' }}</b>候补中</div>
         <div><b>{{ stats?.remaining ?? '-' }}</b>剩余名额</div>
       </div>
 
       <div class="row" style="margin-top: 16px">
-        <button class="btn" :disabled="busy || !activity.open" @click="register">
-          {{ activity.open ? (busy ? '提交中…' : '报名') : '已截止' }}
+        <button class="btn" :disabled="busy || (!activity.open && !hasWaitlist)" @click="register">
+          {{ busy ? '提交中…' : (activity.open ? '报名' : (hasWaitlist ? '加入候补' : '已截止')) }}
         </button>
         <button class="btn plain" @click="go('mine')">我的报名</button>
         <span v-if="state.user?.role === 'STUDENT'" class="muted">同一活动只能有一条有效报名</span>

@@ -27,7 +27,8 @@ class ActivityService:
         for activity in self._activities.list_active(query.strip()):
             approved = self._activities.count_approved(activity.activity_id)
             pending = self._activities.count_pending(activity.activity_id)
-            result.append(activity.to_dict(approved, pending))
+            waitlisted = self._activities.count_waitlisted(activity.activity_id)
+            result.append(activity.to_dict(approved, pending, waitlisted))
         return result
 
     def get(self, activity_id: str) -> dict:
@@ -36,7 +37,8 @@ class ActivityService:
             raise NotFoundError("活动不存在或已下架", code="ACTIVITY_NOT_FOUND")
         approved = self._activities.count_approved(activity_id)
         pending = self._activities.count_pending(activity_id)
-        return activity.to_dict(approved, pending)
+        waitlisted = self._activities.count_waitlisted(activity_id)
+        return activity.to_dict(approved, pending, waitlisted)
 
     def stats(self, activity_id: str) -> dict:
         activity = self._activities.get(activity_id)
@@ -47,6 +49,7 @@ class ActivityService:
             approved=self._activities.count_approved(activity_id),
             pending=self._activities.count_pending(activity_id),
             capacity=activity.capacity,
+            waitlisted=self._activities.count_waitlisted(activity_id),
         ).to_dict()
 
     # ---------- 命令 ----------
@@ -76,6 +79,14 @@ class ActivityService:
         except ValueError:
             raise ValidationError("报名方式必须是 DIRECT 或 REVIEW")
 
+        waitlist_raw = payload.get("waitlist_capacity", 0)
+        try:
+            waitlist_capacity = int(waitlist_raw)
+        except (TypeError, ValueError):
+            raise ValidationError("候补上限必须是非负整数")
+        if waitlist_capacity < 0:
+            raise ValidationError("候补上限必须是非负整数")
+
         activity = Activity(
             activity_id="a_" + uuid.uuid4().hex[:8],
             title=title,
@@ -84,6 +95,7 @@ class ActivityService:
             location=location,
             capacity=capacity,
             policy_type=policy_type,
+            waitlist_capacity=waitlist_capacity,
             created_at=now_iso(),
         )
         self._activities.add(activity)
@@ -124,10 +136,20 @@ class ActivityService:
                 activity.policy_type = PolicyType(str(payload["policy_type"]).upper())
             except ValueError:
                 raise ValidationError("报名方式必须是 DIRECT 或 REVIEW")
+        if "waitlist_capacity" in payload:
+            try:
+                waitlist_capacity = int(payload["waitlist_capacity"])
+            except (TypeError, ValueError):
+                raise ValidationError("候补上限必须是非负整数")
+            if waitlist_capacity < 0:
+                raise ValidationError("候补上限必须是非负整数")
+            activity.waitlist_capacity = waitlist_capacity
 
         self._activities.update(activity)
         return activity.to_dict(
-            self._activities.count_approved(activity_id), self._activities.count_pending(activity_id)
+            self._activities.count_approved(activity_id),
+            self._activities.count_pending(activity_id),
+            self._activities.count_waitlisted(activity_id),
         )
 
     def soft_delete(self, admin: Student, activity_id: str) -> dict:

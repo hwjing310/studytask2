@@ -15,6 +15,7 @@ const form = ref({
   start_at: '2026-12-20T14:00',
   location: '',
   capacity: 30,
+  waitlist_capacity: 0,
   policy_type: 'DIRECT',
 })
 
@@ -46,7 +47,7 @@ async function loadStats() {
 async function createActivity() {
   error.value = ''
   try {
-    const payload = { ...form.value, capacity: Number(form.value.capacity) }
+    const payload = { ...form.value, capacity: Number(form.value.capacity), waitlist_capacity: Number(form.value.waitlist_capacity) }
     const created = await post('/activities', payload)
     toast(`已创建：${created.title}`)
     form.value.title = ''
@@ -120,6 +121,10 @@ onMounted(loadAll)
           <label>人数上限</label>
           <input v-model="form.capacity" type="number" min="1" style="width: 100%" />
         </div>
+        <div style="width: 120px">
+          <label>候补上限</label>
+          <input v-model="form.waitlist_capacity" type="number" min="0" style="width: 100%" />
+        </div>
         <div style="width: 160px">
           <label>报名方式</label>
           <select v-model="form.policy_type" style="width: 100%">
@@ -158,6 +163,7 @@ onMounted(loadAll)
       <div v-if="stats" class="stat">
         <div><b>{{ stats.approved }}</b>已通过</div>
         <div><b>{{ stats.pending }}</b>待审核</div>
+        <div><b>{{ stats.waitlisted }}</b>候补中</div>
         <div><b>{{ stats.remaining }}</b>剩余名额</div>
         <div><b>{{ stats.capacity }}</b>总容量</div>
       </div>
@@ -172,7 +178,7 @@ onMounted(loadAll)
           {{ a.policy_type === 'DIRECT' ? '直接' : '审核' }}
         </span>
         <span class="grow"></span>
-        <span class="muted">{{ a.remaining }}/{{ a.capacity }}</span>
+        <span class="muted">{{ a.remaining }}/{{ a.capacity }}<template v-if="a.waitlisted > 0"> · 候补 {{ a.waitlisted }}</template></span>
         <button class="btn danger" @click="removeActivity(a)">下架</button>
       </div>
     </div>

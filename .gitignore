@@ -10,6 +10,7 @@ project/data/*.db-journal
 project/data/*.db-wal
 project/data/*.db-shm
 *.log
+*.err
 
 # 本地环境
 .env

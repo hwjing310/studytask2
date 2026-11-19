@@ -149,6 +149,41 @@ def main() -> int:
     st3 = expect_status("C9 统计", "GET", f"/api/activities/{rid_act}/stats", 200)
     check("C9 已通过=1 剩余=1", (st3["approved"], st3["remaining"]) == (1, 1), str(st3))
 
+    # ---------- CR-01 候补队列 ----------
+    cr = expect_status("CR 创建候补活动（容量1，候补1）", "POST", "/api/activities", 201,
+                       {"title": "冒烟-候补活动", "category": "测试",
+                        "start_at": "2026-12-28T10:00:00", "location": "B201",
+                        "capacity": 1, "policy_type": "DIRECT", "waitlist_capacity": 1}, at)
+    cr_id = cr["activity_id"]
+    check("CR 活动带 waitlist_capacity", cr.get("waitlist_capacity") == 1, str(cr))
+
+    expect_status("CR-AC1 学生A占满名额", "POST", f"/api/activities/{cr_id}/registrations", 201, {}, t1)
+    wl = expect_status("CR-AC1 学生B进入候补", "POST", f"/api/activities/{cr_id}/registrations", 201, {}, t2)
+    check("CR-AC1 状态=WAITLISTED 位次=1",
+          (wl.get("status"), wl.get("waitlist_position")) == ("WAITLISTED", 1), str(wl))
+
+    full_wl = expect_status("CR-AC2 候补已满", "POST", f"/api/activities/{cr_id}/registrations", 409, {}, t3)
+    check("CR-AC2 错误码=WAITLIST_FULL",
+          (full_wl or {}).get("error", {}).get("code") == "WAITLIST_FULL", str(full_wl))
+
+    st_cr = expect_status("CR-AC5 统计含 waitlisted", "GET", f"/api/activities/{cr_id}/stats", 200)
+    check("CR-AC5 waitlisted=1", st_cr.get("waitlisted") == 1, str(st_cr))
+
+    mine1 = expect_status("CR 学生A报名列表", "GET", "/api/registrations/mine", 200, None, t1)
+    r_a = next(x for x in mine1["items"] if x["activity_id"] == cr_id and x["status"] == "APPROVED")
+    expect_status("CR-AC3 学生A取消已通过", "POST", f"/api/registrations/{r_a['registration_id']}/cancel", 200, {}, t1)
+    mine2 = expect_status("CR-AC3 学生B报名列表", "GET", "/api/registrations/mine", 200, None, t2)
+    r_b = next(x for x in mine2["items"] if x["activity_id"] == cr_id)
+    check("CR-AC3 学生B自动补位为 APPROVED", r_b["status"] == "APPROVED", str(r_b))
+    msgs_b = expect_status("CR-AC3 学生B消息", "GET", "/api/messages", 200, None, t2)
+    check("CR-AC3 收到补位通知",
+          any("补位" in m["content"] for m in msgs_b["items"]), str(msgs_b))
+
+    expect_status("CR-AC4 学生B取消报名", "POST", f"/api/registrations/{r_b['registration_id']}/cancel", 200, {}, t2)
+    st_after = expect_status("CR-AC4 取消后统计", "GET", f"/api/activities/{cr_id}/stats", 200)
+    check("CR-AC4 已通过=0 候补=0",
+          (st_after["approved"], st_after["waitlisted"]) == (0, 0), str(st_after))
+
     # ---------- 边界 ----------
     expect_status("E1 活动已开始报名被拒", "POST", "/api/activities", 201,
                   {"title": "冒烟-已开始", "category": "其他", "start_at": "2020-01-01T00:00:00",

@@ -17,7 +17,10 @@ _TEXT = {
     RegistrationStatus.PENDING.value: "你报名的活动「{title}」已提交，等待管理员审核。",
     RegistrationStatus.REJECTED.value: "你报名的活动「{title}」未通过审核。",
     RegistrationStatus.CANCELLED.value: "你已取消活动「{title}」的报名。",
+    RegistrationStatus.WAITLISTED.value: "活动「{title}」名额已满，你已进入候补（第 {position} 位）。",
 }
+
+_PROMOTED_TEXT = "活动「{title}」名额已释放，你已自动补位成功。"
 
 
 class InboxNotifier(EventSubscriber):
@@ -31,7 +34,13 @@ class InboxNotifier(EventSubscriber):
         if event.status not in _TEXT:
             return
 
-        content = _TEXT[event.status].format(title=event.activity_title or event.activity_id)
+        title = event.activity_title or event.activity_id
+        if event.event_type == "registration.promoted":
+            content = _PROMOTED_TEXT.format(title=title)
+        else:
+            content = _TEXT[event.status].format(
+                title=title, position=event.waitlist_position or "—"
+            )
         message = Message(
             message_id="m_" + uuid.uuid4().hex[:12],
             student_id=event.student_id,

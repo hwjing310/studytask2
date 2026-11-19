@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS activities (
     location    TEXT NOT NULL,
     capacity    INTEGER NOT NULL CHECK (capacity > 0),
     policy_type TEXT NOT NULL CHECK (policy_type IN ('DIRECT','REVIEW')),
+    waitlist_capacity INTEGER NOT NULL DEFAULT 0,
     created_at  TEXT NOT NULL,
     deleted_at  TEXT
 );
@@ -34,14 +35,15 @@ CREATE TABLE IF NOT EXISTS registrations (
     registration_id TEXT PRIMARY KEY,
     activity_id     TEXT NOT NULL REFERENCES activities(activity_id),
     student_id      TEXT NOT NULL REFERENCES students(student_id),
-    status          TEXT NOT NULL CHECK (status IN ('PENDING','APPROVED','REJECTED','CANCELLED')),
+    status          TEXT NOT NULL CHECK (status IN ('PENDING','APPROVED','REJECTED','CANCELLED','WAITLISTED')),
+    waitlist_position INTEGER,
     created_at      TEXT NOT NULL,
     updated_at      TEXT NOT NULL
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS ux_registration_active
     ON registrations(activity_id, student_id)
-    WHERE status IN ('PENDING','APPROVED');
+    WHERE status IN ('PENDING','APPROVED','WAITLISTED');
 
 CREATE INDEX IF NOT EXISTS ix_registration_activity_status
     ON registrations(activity_id, status);
@@ -108,6 +110,72 @@ def connect(db_path: str) -> sqlite3.Connection:
 def migrate(conn: sqlite3.Connection) -> None:
     conn.executescript(SCHEMA)
     conn.commit()
+    # CR-01 迁移：旧库补列 + 重建 registrations（CHECK 约束需要包含 WAITLISTED）
+    _ensure_column(conn, "activities", "waitlist_capacity", "INTEGER NOT NULL DEFAULT 0")
+    _ensure_column(conn, "registrations", "waitlist_position", "INTEGER")
+    _rebuild_registrations_v2(conn)
+
+
+def _table_sql(conn: sqlite3.Connection, table: str) -> str:
+    row = conn.execute(
+        "SELECT sql FROM sqlite_master WHERE type='table' AND name=?", (table,)
+    ).fetchone()
+    return row["sql"] if row else ""
+
+
+def _ensure_column(conn: sqlite3.Connection, table: str, column: str, ddl: str) -> None:
+    columns = [r["name"] for r in conn.execute(f"PRAGMA table_info({table})")]
+    if column not in columns:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}")
+        conn.commit()
+
+
+def _rebuild_registrations_v2(conn: sqlite3.Connection) -> None:
+    """SQLite 无法修改 CHECK 约束，只能重建表；用事务保证要么全成要么全回滚。"""
+    if "WAITLISTED" in _table_sql(conn, "registrations"):
+        return
+
+    conn.commit()
+    conn.execute("PRAGMA foreign_keys = OFF")
+    previous = conn.isolation_level
+    conn.isolation_level = None
+    try:
+        conn.execute("BEGIN")
+        conn.execute(
+            """CREATE TABLE registrations_new (
+                   registration_id TEXT PRIMARY KEY,
+                   activity_id     TEXT NOT NULL REFERENCES activities(activity_id),
+                   student_id      TEXT NOT NULL REFERENCES students(student_id),
+                   status          TEXT NOT NULL CHECK (status IN ('PENDING','APPROVED','REJECTED','CANCELLED','WAITLISTED')),
+                   waitlist_position INTEGER,
+                   created_at      TEXT NOT NULL,
+                   updated_at      TEXT NOT NULL
+               )"""
+        )
+        conn.execute(
+            """INSERT INTO registrations_new
+               (registration_id, activity_id, student_id, status, waitlist_position, created_at, updated_at)
+               SELECT registration_id, activity_id, student_id, status, NULL, created_at, updated_at
+               FROM registrations"""
+        )
+        conn.execute("DROP TABLE registrations")
+        conn.execute("ALTER TABLE registrations_new RENAME TO registrations")
+        conn.execute(
+            """CREATE UNIQUE INDEX IF NOT EXISTS ux_registration_active
+               ON registrations(activity_id, student_id)
+               WHERE status IN ('PENDING','APPROVED','WAITLISTED')"""
+        )
+        conn.execute(
+            """CREATE INDEX IF NOT EXISTS ix_registration_activity_status
+               ON registrations(activity_id, status)"""
+        )
+        conn.execute("COMMIT")
+    except Exception:
+        conn.execute("ROLLBACK")
+        raise
+    finally:
+        conn.isolation_level = previous
+        conn.execute("PRAGMA foreign_keys = ON")
 
 
 DEMO_STUDENTS = [

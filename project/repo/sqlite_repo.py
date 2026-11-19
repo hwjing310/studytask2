@@ -34,6 +34,7 @@ def _activity(row: sqlite3.Row) -> Activity:
         location=row["location"],
         capacity=row["capacity"],
         policy_type=PolicyType(row["policy_type"]),
+        waitlist_capacity=row["waitlist_capacity"],
         created_at=row["created_at"],
         deleted_at=row["deleted_at"],
     )
@@ -45,6 +46,7 @@ def _registration(row: sqlite3.Row) -> Registration:
         activity_id=row["activity_id"],
         student_id=row["student_id"],
         status=RegistrationStatus(row["status"]),
+        waitlist_position=row["waitlist_position"],
         created_at=row["created_at"],
         updated_at=row["updated_at"],
     )
@@ -69,8 +71,8 @@ class SqliteActivityRepository(ActivityRepository):
 
     def add(self, activity: Activity) -> None:
         self._conn.execute(
-            """INSERT INTO activities(activity_id,title,category,start_at,location,capacity,policy_type,created_at,deleted_at)
-               VALUES (?,?,?,?,?,?,?,?,?)""",
+            """INSERT INTO activities(activity_id,title,category,start_at,location,capacity,policy_type,waitlist_capacity,created_at,deleted_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?)""",
             (
                 activity.activity_id,
                 activity.title,
@@ -79,6 +81,7 @@ class SqliteActivityRepository(ActivityRepository):
                 activity.location,
                 activity.capacity,
                 activity.policy_type.value,
+                activity.waitlist_capacity,
                 activity.created_at,
                 activity.deleted_at,
             ),
@@ -87,8 +90,8 @@ class SqliteActivityRepository(ActivityRepository):
 
     def update(self, activity: Activity) -> None:
         self._conn.execute(
-            """UPDATE activities SET title=?, category=?, start_at=?, location=?, capacity=?, policy_type=?
-               WHERE activity_id=?""",
+            """UPDATE activities SET title=?, category=?, start_at=?, location=?, capacity=?,
+               policy_type=?, waitlist_capacity=? WHERE activity_id=?""",
             (
                 activity.title,
                 activity.category,
@@ -96,6 +99,7 @@ class SqliteActivityRepository(ActivityRepository):
                 activity.location,
                 activity.capacity,
                 activity.policy_type.value,
+                activity.waitlist_capacity,
                 activity.activity_id,
             ),
         )
@@ -138,6 +142,13 @@ class SqliteActivityRepository(ActivityRepository):
         ).fetchone()
         return int(row["n"])
 
+    def count_waitlisted(self, activity_id: str) -> int:
+        row = self._conn.execute(
+            "SELECT COUNT(*) AS n FROM registrations WHERE activity_id=? AND status='WAITLISTED'",
+            (activity_id,),
+        ).fetchone()
+        return int(row["n"])
+
 
 class SqliteRegistrationRepository(RegistrationRepository):
     def __init__(self, conn: sqlite3.Connection) -> None:
@@ -145,13 +156,14 @@ class SqliteRegistrationRepository(RegistrationRepository):
 
     def add(self, registration: Registration) -> None:
         self._conn.execute(
-            """INSERT INTO registrations(registration_id,activity_id,student_id,status,created_at,updated_at)
-               VALUES (?,?,?,?,?,?)""",
+            """INSERT INTO registrations(registration_id,activity_id,student_id,status,waitlist_position,created_at,updated_at)
+               VALUES (?,?,?,?,?,?,?)""",
             (
                 registration.registration_id,
                 registration.activity_id,
                 registration.student_id,
                 registration.status.value,
+                registration.waitlist_position,
                 registration.created_at,
                 registration.updated_at,
             ),
@@ -160,8 +172,13 @@ class SqliteRegistrationRepository(RegistrationRepository):
 
     def update(self, registration: Registration) -> None:
         self._conn.execute(
-            "UPDATE registrations SET status=?, updated_at=? WHERE registration_id=?",
-            (registration.status.value, registration.updated_at, registration.registration_id),
+            "UPDATE registrations SET status=?, waitlist_position=?, updated_at=? WHERE registration_id=?",
+            (
+                registration.status.value,
+                registration.waitlist_position,
+                registration.updated_at,
+                registration.registration_id,
+            ),
         )
         self._conn.commit()
 
@@ -174,7 +191,7 @@ class SqliteRegistrationRepository(RegistrationRepository):
     def find_active(self, activity_id: str, student_id: str) -> Optional[Registration]:
         row = self._conn.execute(
             """SELECT * FROM registrations
-               WHERE activity_id=? AND student_id=? AND status IN ('PENDING','APPROVED')
+               WHERE activity_id=? AND student_id=? AND status IN ('PENDING','APPROVED','WAITLISTED')
                LIMIT 1""",
             (activity_id, student_id),
         ).fetchone()
@@ -209,6 +226,23 @@ class SqliteRegistrationRepository(RegistrationRepository):
                    ORDER BY created_at ASC"""
             ).fetchall()
         return [_registration(r) for r in rows]
+
+    def next_waitlist_position(self, activity_id: str) -> int:
+        row = self._conn.execute(
+            "SELECT COALESCE(MAX(waitlist_position), 0) + 1 AS n FROM registrations WHERE activity_id=?",
+            (activity_id,),
+        ).fetchone()
+        return int(row["n"])
+
+    def first_waitlisted(self, activity_id: str) -> Optional[Registration]:
+        row = self._conn.execute(
+            """SELECT * FROM registrations
+               WHERE activity_id=? AND status='WAITLISTED'
+               ORDER BY waitlist_position ASC, created_at ASC
+               LIMIT 1""",
+            (activity_id,),
+        ).fetchone()
+        return _registration(row) if row else None
 
 
 class SqliteStudentRepository(StudentRepository):

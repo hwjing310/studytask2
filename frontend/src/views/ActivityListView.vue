@@ -56,6 +56,9 @@ onMounted(load)
         <p class="muted" style="margin: 4px 0">
           {{ a.start_at.replace('T', ' ') }} · {{ a.location }}
         </p>
+        <p v-if="a.waitlisted > 0" class="muted" style="margin: 0">
+          候补中 {{ a.waitlisted }} 人<template v-if="a.waitlist_capacity > 0">（上限 {{ a.waitlist_capacity }}）</template>
+        </p>
         <div class="row" style="margin-top: 10px">
           <button class="btn plain" @click="go('detail', { id: a.activity_id })">查看详情</button>
           <span v-if="!a.open" class="muted">已截止或已满</span>

@@ -81,7 +81,8 @@ class ActivityServiceTest(unittest.TestCase):
         created = self.svc.create(self.admin, self._payload(capacity=3))
         stats = self.svc.stats(created["activity_id"])
         self.assertEqual(
-            set(stats), {"activity_id", "approved", "pending", "capacity", "remaining"}
+            set(stats),
+            {"activity_id", "approved", "pending", "waitlisted", "capacity", "remaining"},
         )
         self.assertEqual(stats["remaining"], 3)
 

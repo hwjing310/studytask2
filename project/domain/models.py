@@ -23,11 +23,16 @@ class RegistrationStatus(str, Enum):
     APPROVED = "APPROVED"
     REJECTED = "REJECTED"
     CANCELLED = "CANCELLED"
+    WAITLISTED = "WAITLISTED"
 
     @property
     def is_active(self) -> bool:
         """有效报名：占用「重复报名」名额，但不一定占用容量。"""
-        return self in (RegistrationStatus.PENDING, RegistrationStatus.APPROVED)
+        return self in (
+            RegistrationStatus.PENDING,
+            RegistrationStatus.APPROVED,
+            RegistrationStatus.WAITLISTED,
+        )
 
 
 def now_iso() -> str:
@@ -59,6 +64,7 @@ class Activity:
     location: str
     capacity: int
     policy_type: PolicyType
+    waitlist_capacity: int = 0
     created_at: str = field(default_factory=now_iso)
     deleted_at: Optional[str] = None
 
@@ -76,7 +82,11 @@ class Activity:
     def is_full(self, approved_count: int) -> bool:
         return approved_count >= self.capacity
 
-    def to_dict(self, approved: int = 0, pending: int = 0) -> dict:
+    def is_waitlist_full(self, waitlisted_count: int) -> bool:
+        """候补是否已满；waitlist_capacity=0 表示不开放候补。"""
+        return waitlisted_count >= self.waitlist_capacity
+
+    def to_dict(self, approved: int = 0, pending: int = 0, waitlisted: int = 0) -> dict:
         remaining = max(self.capacity - approved, 0)
         return {
             "activity_id": self.activity_id,
@@ -86,10 +96,12 @@ class Activity:
             "location": self.location,
             "capacity": self.capacity,
             "policy_type": self.policy_type.value,
+            "waitlist_capacity": self.waitlist_capacity,
             "created_at": self.created_at,
             "deleted_at": self.deleted_at,
             "approved": approved,
             "pending": pending,
+            "waitlisted": waitlisted,
             "remaining": remaining,
             "open": self.is_open() and not self.is_full(approved),
         }
@@ -101,6 +113,7 @@ class Registration:
     activity_id: str
     student_id: str
     status: RegistrationStatus
+    waitlist_position: Optional[int] = None
     created_at: str = field(default_factory=now_iso)
     updated_at: str = field(default_factory=now_iso)
 
@@ -108,7 +121,11 @@ class Registration:
         return self.status.is_active
 
     def can_cancel(self) -> bool:
-        return self.status in (RegistrationStatus.PENDING, RegistrationStatus.APPROVED)
+        return self.status in (
+            RegistrationStatus.PENDING,
+            RegistrationStatus.APPROVED,
+            RegistrationStatus.WAITLISTED,
+        )
 
     def to_dict(self) -> dict:
         return {
@@ -116,6 +133,7 @@ class Registration:
             "activity_id": self.activity_id,
             "student_id": self.student_id,
             "status": self.status.value,
+            "waitlist_position": self.waitlist_position,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
         }
@@ -151,6 +169,7 @@ class ActivityStats:
     approved: int
     pending: int
     capacity: int
+    waitlisted: int = 0
 
     @property
     def remaining(self) -> int:
@@ -161,6 +180,7 @@ class ActivityStats:
             "activity_id": self.activity_id,
             "approved": self.approved,
             "pending": self.pending,
+            "waitlisted": self.waitlisted,
             "capacity": self.capacity,
             "remaining": self.remaining,
         }

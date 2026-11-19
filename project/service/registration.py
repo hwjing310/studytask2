@@ -60,9 +60,26 @@ class RegistrationService:
         approved = self._activities.count_approved(activity_id)
         policy = self._policies.create(activity.policy_type)
 
-        # 直接型：提交即占名额，必须先确认有余量；审核型不占名额，提交时不校验
+        # 直接型：提交即占名额。名额满时按 CR-01 进入候补；未配置候补则保持原错误
         if policy.policy_type is PolicyType.DIRECT and activity.is_full(approved):
-            raise ConflictError("名额已满", code="CAPACITY_FULL")
+            waitlisted = self._activities.count_waitlisted(activity_id)
+            if activity.waitlist_capacity <= 0:
+                raise ConflictError("名额已满", code="CAPACITY_FULL")
+            if activity.is_waitlist_full(waitlisted):
+                raise ConflictError("名额与候补均已满", code="WAITLIST_FULL")
+            position = self._registrations.next_waitlist_position(activity_id)
+            registration = Registration(
+                registration_id="r_" + uuid.uuid4().hex[:10],
+                activity_id=activity_id,
+                student_id=student.student_id,
+                status=RegistrationStatus.WAITLISTED,
+                waitlist_position=position,
+                created_at=now_iso(),
+                updated_at=now_iso(),
+            )
+            self._registrations.add(registration)
+            self._publish(registration, activity, version=1)
+            return self._decorate(registration)
 
         ctx = RegistrationContext(activity=activity, student=student, approved_count=approved)
         status = policy.decide(ctx)
@@ -85,12 +102,19 @@ class RegistrationService:
             raise ForbiddenError("只能取消自己的报名", code="NOT_OWNER")
         if not registration.can_cancel():
             raise ConflictError("当前状态不可取消", code="INVALID_STATE")
+
+        was_approved = registration.status is RegistrationStatus.APPROVED
         registration.status = RegistrationStatus.CANCELLED
+        registration.waitlist_position = None
         registration.updated_at = now_iso()
         self._registrations.update(registration)
+
         activity = self._activities.get(registration.activity_id, include_deleted=True)
         if activity:
             self._publish(registration, activity, version=2)
+            if was_approved:
+                self._promote_next(activity)
+
         return self._decorate(registration)
 
     def approve(self, admin: Student, registration_id: str) -> dict:
@@ -125,13 +149,36 @@ class RegistrationService:
         return self._decorate(registration)
 
     # ---------------- 内部 ----------------
+    def _promote_next(self, activity: Activity) -> None:
+        """取消已通过报名后，按候补顺序补位（CR-R3）。"""
+        for _ in range(5):  # 防御：跳过已被其他并发操作处理的候补
+            candidate = self._registrations.first_waitlisted(activity.activity_id)
+            if candidate is None:
+                return
+            approved = self._activities.count_approved(activity.activity_id)
+            if activity.is_full(approved):
+                return
+            candidate.status = RegistrationStatus.APPROVED
+            candidate.waitlist_position = None
+            candidate.updated_at = now_iso()
+            self._registrations.update(candidate)
+            self._publish(candidate, activity, version=2, event_type="registration.promoted")
+            return
+
     def _require(self, registration_id: str) -> Registration:
         registration = self._registrations.get(registration_id)
         if registration is None:
             raise NotFoundError("报名记录不存在", code="REGISTRATION_NOT_FOUND")
         return registration
 
-    def _publish(self, registration: Registration, activity: Activity, *, version: int) -> None:
+    def _publish(
+        self,
+        registration: Registration,
+        activity: Activity,
+        *,
+        version: int,
+        event_type: str = "registration.status_changed",
+    ) -> None:
         self._bus.publish(
             RegistrationEvent.build(
                 registration_id=registration.registration_id,
@@ -140,6 +187,8 @@ class RegistrationService:
                 status=registration.status.value,
                 activity_title=activity.title,
                 version=version,
+                event_type=event_type,
+                waitlist_position=registration.waitlist_position,
             )
         )
 

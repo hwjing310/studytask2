@@ -12,6 +12,7 @@ const LABEL = {
   APPROVED: '已通过',
   REJECTED: '已拒绝',
   CANCELLED: '已取消',
+  WAITLISTED: '候补中',
 }
 
 async function load() {
@@ -62,14 +63,17 @@ onMounted(load)
       <p class="muted" style="margin: 6px 0 0">
         活动时间：{{ (r.activity_start_at || '').replace('T', ' ') }} ·
         提交于 {{ r.created_at.replace('T', ' ') }}
+        <span v-if="r.status === 'WAITLISTED' && r.waitlist_position">
+          · 候补第 {{ r.waitlist_position }} 位
+        </span>
       </p>
       <div class="row" style="margin-top: 10px">
         <button
-          v-if="r.status === 'PENDING' || r.status === 'APPROVED'"
+          v-if="r.status === 'PENDING' || r.status === 'APPROVED' || r.status === 'WAITLISTED'"
           class="btn danger"
           @click="cancel(r)"
         >
-          取消报名
+          {{ r.status === 'WAITLISTED' ? '取消候补' : '取消报名' }}
         </button>
       </div>
     </div>
