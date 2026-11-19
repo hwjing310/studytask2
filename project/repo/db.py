@@ -183,6 +183,8 @@ DEMO_STUDENTS = [
     ("s001", "张同学", Role.STUDENT, "student123"),
     ("s002", "李同学", Role.STUDENT, "student123"),
     ("s003", "王同学", Role.STUDENT, "student123"),
+    ("s004", "赵同学", Role.STUDENT, "student123"),
+    ("s005", "钱同学", Role.STUDENT, "student123"),
 ]
 
 DEMO_ACTIVITIES = [
@@ -210,28 +212,28 @@ DEMO_ACTIVITIES = [
 
 
 def seed(conn: sqlite3.Connection) -> None:
-    """仅在空库时写入演示数据。"""
-    cur = conn.execute("SELECT COUNT(*) AS n FROM students")
-    if cur.fetchone()["n"] > 0:
-        return
+    """种子数据：学生账号按需补齐（可重复执行）；示例活动仅在空库时写入。"""
+    empty = conn.execute("SELECT COUNT(*) AS n FROM students").fetchone()["n"] == 0
     for student_id, name, role, password in DEMO_STUDENTS:
         conn.execute(
-            "INSERT INTO students(student_id, name, role, password_hash) VALUES (?,?,?,?)",
+            "INSERT OR IGNORE INTO students(student_id, name, role, password_hash) VALUES (?,?,?,?)",
             (student_id, name, role.value, hash_password(password)),
         )
-    for activity in DEMO_ACTIVITIES:
-        conn.execute(
-            """INSERT INTO activities(activity_id,title,category,start_at,location,capacity,policy_type,created_at,deleted_at)
-               VALUES (?,?,?,?,?,?,?,?,NULL)""",
-            (
-                activity.activity_id,
-                activity.title,
-                activity.category,
-                activity.start_at,
-                activity.location,
-                activity.capacity,
-                activity.policy_type.value,
-                activity.created_at,
-            ),
-        )
+    if empty:
+        for activity in DEMO_ACTIVITIES:
+            conn.execute(
+                """INSERT INTO activities(activity_id,title,category,start_at,location,capacity,policy_type,waitlist_capacity,created_at,deleted_at)
+                   VALUES (?,?,?,?,?,?,?,?,?,NULL)""",
+                (
+                    activity.activity_id,
+                    activity.title,
+                    activity.category,
+                    activity.start_at,
+                    activity.location,
+                    activity.capacity,
+                    activity.policy_type.value,
+                    activity.waitlist_capacity,
+                    activity.created_at,
+                ),
+            )
     conn.commit()

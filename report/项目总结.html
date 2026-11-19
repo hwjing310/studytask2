@@ -98,7 +98,7 @@ table, pre, blockquote { page-break-inside: avoid; }
 <pre><code>tools\py.cmd run.py --port 8000          :: 后端（自动建库+种子数据）
 cd frontend &amp;&amp; npm install &amp;&amp; npm run dev :: 前端（代理 /api 到 8000）
 npm run build                             :: 生产构建，产物由后端托管</code></pre>
-<p>演示账号：<code>admin / admin123</code>（管理员）、<code>s001..s003 / student123</code>（学生）。</p>
+<p>演示账号：<code>admin / admin123</code>（管理员）、<code>s001</code>–<code>s005 / student123</code>（学生，共 5 个）。</p>
 <h2>附录 B：交付物清单</h2>
 <table><thead><tr><th>类别</th><th>文件</th></tr></thead><tbody><tr><td>需求</td><td><code>docs/srs.md</code>、<code>docs/use-cases.md</code>、<code>docs/test-cases.md</code></td></tr><tr><td>设计</td><td><code>docs/design-principles.md</code>、<code>docs/design-decisions.md</code>、<code>docs/uml/*</code>（类图、3 张时序图、状态图）</td></tr><tr><td>变更</td><td><code>docs/change-request.md</code>、<code>docs/change-impact.md</code></td></tr><tr><td>代码</td><td><code>project/<strong></code>、<code>frontend/</strong></code>、<code>run.py</code></td></tr><tr><td>测试</td><td><code>tests/**</code>（41 单测 + 70 冒烟）、<code>tests/last_unit.txt</code>、<code>tests/last_run.txt</code></td></tr><tr><td>过程</td><td><code>AI_DEV_LOG.md</code>、Git 标签 <code>baseline-v1</code> / <code>change-v2</code></td></tr></tbody></table>
 </body>

@@ -149,6 +149,12 @@
 - 影响文件：`frontend/src/views/ActivityDetailView.vue`、`report/项目总结.md`
 - 对应 Git 提交：`change-v2`（随最终提交）
 
+### 2026-11-19 · 演示账号扩到 5 个学生
+- 需求：答辩时多人同时演示，学生账号不够。
+- 改动：`DEMO_STUDENTS` 增加 `s004 赵同学`、`s005 钱同学`；`seed()` 改为**幂等补种**（`INSERT OR IGNORE` 学生账号，示例活动仅在空库写入），这样已部署的实例升级后也能补上新账号，不必删库。
+- 验证：重新打包上传并重启后，公网 `s001`–`s005` 全部可登录（姓名与角色正确）。
+- 影响文件：`project/repo/db.py`、`README.md`、`report/项目总结.md`
+
 ---
 
 <!-- 后续阶段在此追加 -->
