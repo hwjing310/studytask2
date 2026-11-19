@@ -134,7 +134,7 @@
 - 返工（记录下来，写进报告）：
   1) `find_active` 未包含 `WAITLISTED`，导致重复报名落到数据库唯一索引异常，而非 409；
   2) 详情页按钮用 `open` 判断，满员时被禁用，改为 `open || hasWaitlist`。
-- 指标：新增类 0；核心业务文件 3；总改动 22 文件 / 711 行；回归失败 0。
+- 指标：新增类 0；核心业务文件 3；总改动 32 文件（代码 +492/−35，生产代码 +269/−30）；回归失败 0。
 - 影响的文件：`project/**`、`frontend/src/**`、`tests/**`、`docs/{srs,change-impact}.md`、`docs/uml/{class-diagram,state-registration}.*`
 - 对应 Git 提交：`change-v2`
 
