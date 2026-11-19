@@ -113,3 +113,54 @@ curl -s -X DELETE -H "Authorization: Bearer vibe_xxx" https://thevibehosting.com
 ```
 
 本项目自身回滚：`git switch change-v2` 或 `git switch baseline-v1`，重新构建上传即可。
+
+---
+
+## 10. 本次部署记录（2026-11-19）
+
+| 项 | 值 |
+|---|---|
+| 平台 | thevibehosting.com（匿名免费实例） |
+| 公网地址 | **https://campusevent.thevibehosting.com** |
+| 服务器 ID | `srv_be23a78f64` |
+| 主机 / 端口 | `root@46.225.188.115 -p 51570` |
+| 应用目录 | `/root/app`（zip 解压，59 个文件） |
+| 启动方式 | `/root/run.sh` → `python3 run.py --port 80 --db /root/app/project/data/campusevent.db` |
+| 磁盘占用 | 约 1.2 MB（代码 + dist + 初始数据库） |
+
+**已验证（公网）**
+
+| 检查 | 结果 |
+|---|---|
+| `GET /api/health` | 200 `{"status":"ok"}` |
+| `GET /` | 200，返回构建后的 `index.html` |
+| `POST /api/login`（admin） | 200，角色 ADMIN |
+| `GET /api/activities` | 200，2 条种子活动 |
+| 候补全流程 | 报名占满 → 第二人 `WAITLISTED(1)` → 取消 → 自动补位 `APPROVED` → 统计 `approved=1, waitlisted=0` |
+| 重启/重置 | 删除 db 后进程自动重启并重新种子化，健康检查恢复 |
+
+**凭据存放**
+
+- `api_key`、`ssh_private_key`、`create.json` 保存在**本仓库外**的 `H:\temp\studytask2\.vibe\`（已加入 `.gitignore`，不会提交）。
+- 丢失 `api_key` 且未验证手机/邮箱时无法找回，请自行备份。
+
+**日常运维**
+
+```bash
+# 查看服务器
+curl -s -H "Authorization: Bearer <api_key>" https://thevibehosting.com/servers
+# 休眠 / 唤醒
+curl -s -X POST -H "Authorization: Bearer <api_key>" https://thevibehosting.com/servers/srv_be23a78f64/sleep
+# 删除（数据一并删除）
+curl -s -X DELETE -H "Authorization: Bearer <api_key>" https://thevibehosting.com/servers/srv_be23a78f64
+```
+
+**更新代码**
+
+```bash
+# 本地重新构建 + 打包后
+scp -i .vibe/key -P 51570 build/CampusEvent-deploy-*.zip root@46.225.188.115:/root/
+ssh -i .vibe/key -p 51570 root@46.225.188.115 "cd /root/app && python3 -m zipfile -e /root/CampusEvent-deploy-*.zip . && kill -9 \$(pgrep -f '[r]un.py')"
+```
+
+> 说明：该实例为**匿名免费**档（256 MB、空闲休眠）。首次访问可能冷启动 1–3 秒；如需常驻，可用手机验证后开启 `never_sleep`。

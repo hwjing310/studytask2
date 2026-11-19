@@ -29,3 +29,8 @@ tools/python312.zip
 
 # 构建与打包产物
 build/
+
+# 部署凭据（绝不入库）
+.vibe/
+.thevibehosting*
+.thevibehosting_key
