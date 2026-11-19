@@ -26,3 +26,6 @@ desktop.ini
 # 大文件（便携解释器不入库）
 tools/python312/
 tools/python312.zip
+
+# 构建与打包产物
+build/
