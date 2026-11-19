@@ -1,0 +1,41 @@
+test_capacity_must_be_positive (test_activity_service.ActivityServiceTest.test_capacity_must_be_positive) ... ok
+test_create_ok (test_activity_service.ActivityServiceTest.test_create_ok) ... ok
+test_list_filter_by_title (test_activity_service.ActivityServiceTest.test_list_filter_by_title) ... ok
+test_policy_type_must_be_known (test_activity_service.ActivityServiceTest.test_policy_type_must_be_known) ... ok
+test_soft_delete_hides_activity (test_activity_service.ActivityServiceTest.test_soft_delete_hides_activity) ... ok
+test_start_at_must_be_iso (test_activity_service.ActivityServiceTest.test_start_at_must_be_iso) ... ok
+test_stats_shape (test_activity_service.ActivityServiceTest.test_stats_shape) ... ok
+test_title_required (test_activity_service.ActivityServiceTest.test_title_required) ... ok
+test_update_capacity_below_approved_conflicts (test_activity_service.ActivityServiceTest.test_update_capacity_below_approved_conflicts) ... ok
+test_duplicate_event_writes_once (test_notify.InboxNotifierTest.test_duplicate_event_writes_once) ... ok
+test_failure_is_recorded_and_swallowed (test_notify.InboxNotifierTest.test_failure_is_recorded_and_swallowed) ... ok
+test_message_written_on_success (test_notify.InboxNotifierTest.test_message_written_on_success) ... ok
+test_unknown_event_type_ignored (test_notify.InboxNotifierTest.test_unknown_event_type_ignored) ... ok
+test_direct_policy_returns_approved (test_policy.PolicyTest.test_direct_policy_returns_approved) ... ok
+test_factory_maps_policy_type (test_policy.PolicyTest.test_factory_maps_policy_type) ... ok
+test_factory_rejects_unknown_type (test_policy.PolicyTest.test_factory_rejects_unknown_type) ... ok
+test_policies_are_pure (test_policy.PolicyTest.test_policies_are_pure)
+策略不得有副作用：连续调用结果一致，且不改动上下文。 ... ok
+test_review_policy_returns_pending (test_policy.PolicyTest.test_review_policy_returns_pending) ... ok
+test_approve_moves_to_approved_and_notifies (test_registration_service.RegistrationServiceTest.test_approve_moves_to_approved_and_notifies) ... ok
+test_approve_non_pending_is_conflict (test_registration_service.RegistrationServiceTest.test_approve_non_pending_is_conflict) ... ok
+test_approve_when_capacity_full_keeps_pending (test_registration_service.RegistrationServiceTest.test_approve_when_capacity_full_keeps_pending) ... ok
+test_cancel_others_registration_forbidden (test_registration_service.RegistrationServiceTest.test_cancel_others_registration_forbidden) ... ok
+test_cancel_own_registration (test_registration_service.RegistrationServiceTest.test_cancel_own_registration) ... ok
+test_cancel_twice_conflict (test_registration_service.RegistrationServiceTest.test_cancel_twice_conflict) ... ok
+test_capacity_full_rejected (test_registration_service.RegistrationServiceTest.test_capacity_full_rejected) ... ok
+test_deleted_activity_not_found (test_registration_service.RegistrationServiceTest.test_deleted_activity_not_found) ... ok
+test_direct_register_auto_approved_and_notified (test_registration_service.RegistrationServiceTest.test_direct_register_auto_approved_and_notified) ... ok
+test_duplicate_active_registration_rejected (test_registration_service.RegistrationServiceTest.test_duplicate_active_registration_rejected) ... ok
+test_reject_pending (test_registration_service.RegistrationServiceTest.test_reject_pending) ... ok
+test_repeated_event_does_not_duplicate_message (test_registration_service.RegistrationServiceTest.test_repeated_event_does_not_duplicate_message) ... ok
+test_review_register_pending_does_not_consume_capacity (test_registration_service.RegistrationServiceTest.test_review_register_pending_does_not_consume_capacity) ... ok
+test_started_activity_cannot_register (test_registration_service.RegistrationServiceTest.test_started_activity_cannot_register) ... ok
+test_data_survives_restart (test_restart.RestartConsistencyTest.test_data_survives_restart) ... ok
+
+----------------------------------------------------------------------
+Ran 33 tests in 15.818s
+
+OK
+
+运行用例：33，失败：0，错误：0，跳过：0，耗时：15.8s

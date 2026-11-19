@@ -1,0 +1,5 @@
+# 本项目零第三方依赖，仅使用 Python 标准库。
+# 保留本文件以符合指导书交付物规范（requirements.txt）。
+#
+# 运行环境：Python 3.12.x（便携版即可）
+# 标准库模块：http.server, sqlite3, json, uuid, datetime, unittest, urllib
