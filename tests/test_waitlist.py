@@ -152,5 +152,83 @@ class WaitlistTest(unittest.TestCase):
         self.assertEqual(self.env.activities.stats(act["activity_id"])["waitlisted"], 0)
 
 
+class AdminWaitlistTest(unittest.TestCase):
+    """CR-02：管理员把待审核申请手动转为候补。"""
+
+    def setUp(self) -> None:
+        self.env = Env()
+        self.svc = self.env.registrations
+        self.admin = self.env.student("admin")
+        self.s1 = self.env.student("s001")
+        self.s2 = self.env.student("s002")
+
+    def tearDown(self) -> None:
+        self.env.cleanup()
+
+    def _review_activity(self, *, capacity=1, waitlist=0):
+        return self.env.activities.create(
+            self.admin,
+            {
+                "title": "CR-02 数字建模比赛",
+                "category": "学术",
+                "start_at": "2099-07-01T10:00:00",
+                "location": "机房",
+                "capacity": capacity,
+                "policy_type": "REVIEW",
+                "waitlist_capacity": waitlist,
+            },
+        )
+
+    def test_waitlist_pending_and_autoset_capacity(self):
+        act = self._review_activity(capacity=1, waitlist=0)
+        reg = self.svc.register(self.s1, act["activity_id"])
+        self.assertEqual(reg["status"], "PENDING")
+
+        moved = self.svc.waitlist(self.admin, reg["registration_id"])
+        self.assertEqual(moved["status"], "WAITLISTED")
+        self.assertEqual(moved["waitlist_position"], 1)
+
+        # 未配置候补上限时自动补成容量
+        self.assertEqual(self.env.activities.get(act["activity_id"])["waitlist_capacity"], 1)
+
+    def test_waitlist_only_for_pending(self):
+        act = self._review_activity(capacity=2, waitlist=2)
+        reg = self.svc.register(self.s1, act["activity_id"])
+        self.svc.approve(self.admin, reg["registration_id"])
+
+        with self.assertRaises(ConflictError) as ctx:
+            self.svc.waitlist(self.admin, reg["registration_id"])
+        self.assertEqual(ctx.exception.code, "INVALID_STATE")
+
+    def test_waitlist_full(self):
+        act = self._review_activity(capacity=5, waitlist=1)
+        r1 = self.svc.register(self.s1, act["activity_id"])
+        r2 = self.svc.register(self.s2, act["activity_id"])
+        self.svc.waitlist(self.admin, r1["registration_id"])
+
+        with self.assertRaises(ConflictError) as ctx:
+            self.svc.waitlist(self.admin, r2["registration_id"])
+        self.assertEqual(ctx.exception.code, "WAITLIST_FULL")
+
+    def test_waitlisted_promoted_when_slot_frees(self):
+        act = self._review_activity(capacity=1, waitlist=0)
+        r1 = self.svc.register(self.s1, act["activity_id"])
+        self.svc.approve(self.admin, r1["registration_id"])
+
+        r2 = self.svc.register(self.s2, act["activity_id"])
+        self.svc.waitlist(self.admin, r2["registration_id"])
+
+        # 名额释放 → 候补者自动通过
+        self.svc.cancel(self.s1, r1["registration_id"])
+        promoted = self.env.repos.registrations.get(r2["registration_id"])
+        self.assertEqual(promoted.status.value, "APPROVED")
+
+    def test_admin_cannot_register(self):
+        act = self.env.make_activity(capacity=5)
+        with self.assertRaises(Exception) as ctx:
+            self.svc.register(self.admin, act["activity_id"])
+        self.assertEqual(getattr(ctx.exception, "code", None), "ADMIN_CANNOT_REGISTER")
+
+
 if __name__ == "__main__":
     unittest.main()

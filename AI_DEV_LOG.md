@@ -164,6 +164,16 @@
 - 验证：公网 `GET /api/activities` 返回 6 条；新 bundle `index-DazssvbG.js` 同时包含「s005」与「我的报名状态」字样；服务重启后 health 正常。
 - 影响文件：`project/repo/db.py`、`frontend/src/views/LoginView.vue`、`docs/deploy.md`
 
+### 2026-11-21 · CR-02：管理员手动转候补 + 禁止管理员报名
+- 反馈：管理端待审核列表只有「批准/拒绝」，无法把学生排进候补；且管理员能自己报名（自批自报）。
+- 改动：
+  1. `RegistrationService.waitlist()`：PENDING → WAITLISTED，按 `next_waitlist_position` 分配位次；活动 `waitlist_capacity=0` 时自动补成容量；满员返回 `WAITLIST_FULL`；
+  2. 新接口 `POST /api/registrations/{id}/waitlist`（仅管理员）；
+  3. `register()` 拒绝管理员（403 `ADMIN_CANNOT_REGISTER`），前端详情页对管理员隐藏报名按钮；
+  4. 管理端每行新增「转候补」按钮；补位逻辑沿用 CR-01（取消已通过→候补首位自动 APPROVED）。
+- 验证：单测 46/46（新增 5 例）、冒烟 84/84（新增 14 条断言）；公网实测「转候补→位次 1→自动补成上限 1→取消后自动通过→管理员报名 403」全部符合预期。
+- 影响文件：`project/service/registration.py`、`project/web/server.py`、`frontend/src/views/{AdminView,ActivityDetailView}.vue`、`tests/{test_waitlist,smoke_api}.py`、`docs/{change-request,test-cases}.md`、`README.md`
+
 ---
 
 <!-- 后续阶段在此追加 -->

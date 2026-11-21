@@ -32,6 +32,11 @@ test_repeated_event_does_not_duplicate_message (test_registration_service.Regist
 test_review_register_pending_does_not_consume_capacity (test_registration_service.RegistrationServiceTest.test_review_register_pending_does_not_consume_capacity) ... ok
 test_started_activity_cannot_register (test_registration_service.RegistrationServiceTest.test_started_activity_cannot_register) ... ok
 test_data_survives_restart (test_restart.RestartConsistencyTest.test_data_survives_restart) ... ok
+test_admin_cannot_register (test_waitlist.AdminWaitlistTest.test_admin_cannot_register) ... ok
+test_waitlist_full (test_waitlist.AdminWaitlistTest.test_waitlist_full) ... ok
+test_waitlist_only_for_pending (test_waitlist.AdminWaitlistTest.test_waitlist_only_for_pending) ... ok
+test_waitlist_pending_and_autoset_capacity (test_waitlist.AdminWaitlistTest.test_waitlist_pending_and_autoset_capacity) ... ok
+test_waitlisted_promoted_when_slot_frees (test_waitlist.AdminWaitlistTest.test_waitlisted_promoted_when_slot_frees) ... ok
 test_cancel_promotes_first_waitlisted (test_waitlist.WaitlistTest.test_cancel_promotes_first_waitlisted) ... ok
 test_cancel_waitlisted (test_waitlist.WaitlistTest.test_cancel_waitlisted) ... ok
 test_full_then_waitlist_with_position (test_waitlist.WaitlistTest.test_full_then_waitlist_with_position) ... ok
@@ -42,8 +47,8 @@ test_waitlist_full (test_waitlist.WaitlistTest.test_waitlist_full) ... ok
 test_waitlisted_counts_as_active (test_waitlist.WaitlistTest.test_waitlisted_counts_as_active) ... ok
 
 ----------------------------------------------------------------------
-Ran 41 tests in 22.852s
+Ran 46 tests in 26.764s
 
 OK
 
-运行用例：41，失败：0，错误：0，跳过：0，耗时：22.9s
+运行用例：46，失败：0，错误：0，跳过：0，耗时：26.8s

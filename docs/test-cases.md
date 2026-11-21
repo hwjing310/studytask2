@@ -146,3 +146,18 @@
 
 执行环境：Windows 10 + Python 3.12.7（便携版），SQLite 3.45.3。
 执行时间：2026-11-19。
+
+---
+
+## 5. v1.2（CR-02）新增验收用例与结果
+
+| 编号 | 场景 | 预期 | 自动化 | 结果 |
+|---|---|---|---|---|
+| CR2-AC1 | 管理员把待审核申请转为候补（活动未配候补上限） | `WAITLISTED` 位次 1；`waitlist_capacity` 自动补成容量 | `test_waitlist.AdminWaitlistTest.test_waitlist_pending_and_autoset_capacity`、冒烟 CR-02 | 通过 |
+| CR2-AC2 | 对已通过的报名点「转候补」 | 409 `INVALID_STATE` | `test_waitlist_only_for_pending` | 通过 |
+| CR2-AC3 | 候补上限已满再转 | 409 `WAITLIST_FULL` | `test_waitlist_full` | 通过 |
+| CR2-AC4 | 转候补后名额释放 | 自动 `APPROVED`，统计 `approved=1, waitlisted=0` | `test_waitlisted_promoted_when_slot_frees`、冒烟 CR-02 | 通过 |
+| CR2-AC5 | 管理员调用报名接口 | 403 `ADMIN_CANNOT_REGISTER` | `test_admin_cannot_register`、冒烟 CR-02 | 通过 |
+
+执行结果：单元测试 **46/46**，API 冒烟 **84/84**，回归失败 0。
+执行时间：2026-11-21。

@@ -184,6 +184,37 @@ def main() -> int:
     check("CR-AC4 已通过=0 候补=0",
           (st_after["approved"], st_after["waitlisted"]) == (0, 0), str(st_after))
 
+    # ---------- CR-02 管理员手动转候补 ----------
+    cr2 = expect_status("CR-02 创建审核型活动（未配候补）", "POST", "/api/activities", 201,
+                        {"title": "冒烟-数字建模比赛", "category": "学术",
+                         "start_at": "2026-12-27T10:00:00", "location": "机房",
+                         "capacity": 1, "policy_type": "REVIEW"}, at)
+    cr2_id = cr2["activity_id"]
+
+    r_a = expect_status("CR-02 学生A报名并批准", "POST", f"/api/activities/{cr2_id}/registrations", 201, {}, t1)
+    expect_status("CR-02 批准学生A", "POST", f"/api/registrations/{r_a['registration_id']}/approve", 200, {}, at)
+
+    r_b = expect_status("CR-02 学生B报名", "POST", f"/api/activities/{cr2_id}/registrations", 201, {}, t2)
+    moved = expect_status("CR-02 管理员转候补", "POST", f"/api/registrations/{r_b['registration_id']}/waitlist", 200, {}, at)
+    check("CR-02 状态=WAITLISTED 位次=1",
+          (moved.get("status"), moved.get("waitlist_position")) == ("WAITLISTED", 1), str(moved))
+
+    detail = expect_status("CR-02 候补上限自动补成容量", "GET", f"/api/activities/{cr2_id}", 200)
+    check("CR-02 waitlist_capacity=1", detail.get("waitlist_capacity") == 1, str(detail))
+
+    expect_status("CR-02 学生A取消释放名额", "POST",
+                  f"/api/registrations/{r_a['registration_id']}/cancel", 200, {}, t1)
+    st2 = expect_status("CR-02 统计", "GET", f"/api/activities/{cr2_id}/stats", 200)
+    check("CR-02 候补自动补位（approved=1, waitlisted=0）",
+          (st2["approved"], st2["waitlisted"]) == (1, 0), str(st2))
+
+    expect_status("CR-02 已通过不可再转候补", "POST",
+                  f"/api/registrations/{r_b['registration_id']}/waitlist", 409, {}, at)
+    admin_reg = expect_status("CR-02 管理员不可报名", "POST",
+                              f"/api/activities/{cr2_id}/registrations", 403, {}, at)
+    check("CR-02 错误码=ADMIN_CANNOT_REGISTER",
+          (admin_reg or {}).get("error", {}).get("code") == "ADMIN_CANNOT_REGISTER", str(admin_reg))
+
     # ---------- 边界 ----------
     expect_status("E1 活动已开始报名被拒", "POST", "/api/activities", 201,
                   {"title": "冒烟-已开始", "category": "其他", "start_at": "2020-01-01T00:00:00",

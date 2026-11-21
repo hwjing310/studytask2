@@ -144,7 +144,7 @@ watch(() => props.activityId, load)
 
       <div class="row" style="margin-top: 16px">
         <button
-          v-if="!hasActiveRegistration"
+          v-if="!hasActiveRegistration && isStudent"
           class="btn"
           :disabled="busy || (!activity.open && !hasWaitlist)"
           @click="register"
@@ -153,6 +153,7 @@ watch(() => props.activityId, load)
         </button>
         <button class="btn plain" @click="go('mine')">我的报名</button>
         <span v-if="isStudent" class="muted">同一活动只能有一条有效报名</span>
+        <span v-else class="muted">管理员账号不参与报名，请用学生账号演示</span>
       </div>
     </div>
   </div>

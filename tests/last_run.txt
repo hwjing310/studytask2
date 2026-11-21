@@ -1,4 +1,4 @@
-base=http://127.0.0.1:8050
+base=http://127.0.0.1:8060
 PASS  管理员登录 -> 200
 PASS  学生A登录 -> 200
 PASS  学生B登录 -> 200
@@ -58,6 +58,20 @@ PASS  CR-AC3 收到补位通知
 PASS  CR-AC4 学生B取消报名 -> 200
 PASS  CR-AC4 取消后统计 -> 200
 PASS  CR-AC4 已通过=0 候补=0
+PASS  CR-02 创建审核型活动（未配候补） -> 201
+PASS  CR-02 学生A报名并批准 -> 201
+PASS  CR-02 批准学生A -> 200
+PASS  CR-02 学生B报名 -> 201
+PASS  CR-02 管理员转候补 -> 200
+PASS  CR-02 状态=WAITLISTED 位次=1
+PASS  CR-02 候补上限自动补成容量 -> 200
+PASS  CR-02 waitlist_capacity=1
+PASS  CR-02 学生A取消释放名额 -> 200
+PASS  CR-02 统计 -> 200
+PASS  CR-02 候补自动补位（approved=1, waitlisted=0）
+PASS  CR-02 已通过不可再转候补 -> 409
+PASS  CR-02 管理员不可报名 -> 403
+PASS  CR-02 错误码=ADMIN_CANNOT_REGISTER
 PASS  E1 活动已开始报名被拒 -> 201
 PASS  E1 已开始活动不可报名 -> 409
 PASS  E3 非本人取消失败 -> 403
@@ -70,4 +84,4 @@ PASS  E8 学生访问待审核列表被拒 -> 403
 PASS  软删除活动 -> 200
 PASS  删除后详情 404 -> 404
 
-通过 70，失败 0
+通过 84，失败 0

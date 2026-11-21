@@ -78,6 +78,16 @@ async function reject(item) {
   }
 }
 
+async function waitlist(item) {
+  try {
+    const res = await post(`/registrations/${item.registration_id}/waitlist`)
+    toast(`已转为候补（第 ${res.waitlist_position} 位）`)
+    await loadAll()
+  } catch (err) {
+    error.value = err.message
+  }
+}
+
 async function removeActivity(a) {
   if (!window.confirm(`确定下架「${a.title}」？（软删除，历史报名保留）`)) return
   try {
@@ -146,6 +156,7 @@ onMounted(loadAll)
         <span class="grow"></span>
         <span class="muted">{{ p.created_at.replace('T', ' ') }}</span>
         <button class="btn" @click="approve(p)">批准</button>
+        <button class="btn plain" @click="waitlist(p)">转候补</button>
         <button class="btn danger" @click="reject(p)">拒绝</button>
       </div>
     </div>

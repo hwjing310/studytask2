@@ -206,6 +206,14 @@ def reject_registration(req: Request) -> Response:
     return json_body(app.registrations.reject(user, req.params["registration_id"]))
 
 
+@route("POST", r"/api/registrations/(?P<registration_id>[^/]+)/waitlist")
+def waitlist_registration(req: Request) -> Response:
+    app: App = req_app(req)
+    user = require_user(req)
+    app.auth.require_admin(user)
+    return json_body(app.registrations.waitlist(user, req.params["registration_id"]))
+
+
 # --------------------------------------------------------------------------- #
 # 站内消息
 # --------------------------------------------------------------------------- #
