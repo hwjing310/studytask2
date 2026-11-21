@@ -95,6 +95,7 @@ table, pre, blockquote { page-break-inside: avoid; }
 <h2>8. 反思与改进</h2>
 <ol><li><strong>「有效报名」应集中定义</strong>：本次返工暴露出状态集合散落在 SQL、领域属性、测试三处。改进：定义 <code>ACTIVE_STATUSES</code> 单一常量，SQL 由参数生成。</li><li><strong>迁移要尽早验证</strong>：SQLite 的 CHECK 约束无法修改，必须重建表。若在实现末期才发现，风险很高；本次先写了迁移脚本并在旧库上实测，才敢合并。</li><li><strong>演示默认值要贴合场景</strong>：候补上限默认 0 符合变更单，但演示时容易忘填而误以为功能失效，应在表单加提示。</li><li><strong>AI 协作的边界</strong>：AI 负责生成代码与测试，但设计决策、取舍与验收判定必须由人给出；<code>AI_DEV_LOG.md</code> 记录了 8 个阶段的意图、采纳/修改理由与返工，可作为过程证据。</li></ol>
 <h2>附录 A：运行方式</h2>
+<p><strong>在线演示（已部署）</strong>：&lt;https://campusevent.thevibehosting.com&gt; —— <code>admin/admin123</code>、<code>s001</code>–<code>s005/student123</code></p>
 <pre><code>tools\py.cmd run.py --port 8000          :: 后端（自动建库+种子数据）
 cd frontend &amp;&amp; npm install &amp;&amp; npm run dev :: 前端（代理 /api 到 8000）
 npm run build                             :: 生产构建，产物由后端托管</code></pre>
