@@ -42,8 +42,8 @@ test_waitlist_full (test_waitlist.WaitlistTest.test_waitlist_full) ... ok
 test_waitlisted_counts_as_active (test_waitlist.WaitlistTest.test_waitlisted_counts_as_active) ... ok
 
 ----------------------------------------------------------------------
-Ran 41 tests in 29.136s
+Ran 41 tests in 22.852s
 
 OK
 
-运行用例：41，失败：0，错误：0，跳过：0，耗时：29.1s
+运行用例：41，失败：0，错误：0，跳过：0，耗时：22.9s

@@ -135,7 +135,7 @@ curl -s -X DELETE -H "Authorization: Bearer vibe_xxx" https://thevibehosting.com
 | `GET /api/health` | 200 `{"status":"ok"}` |
 | `GET /` | 200，返回构建后的 `index.html` |
 | `POST /api/login`（admin） | 200，角色 ADMIN |
-| `GET /api/activities` | 200，2 条种子活动 |
+| `GET /api/activities` | 200，6 条种子活动（直接型 4 / 审核型 2，其中 a005、a006 带候补） |
 | 候补全流程 | 报名占满 → 第二人 `WAITLISTED(1)` → 取消 → 自动补位 `APPROVED` → 统计 `approved=1, waitlisted=0` |
 | 重启/重置 | 删除 db 后进程自动重启并重新种子化，健康检查恢复 |
 

@@ -50,11 +50,15 @@ function fill(name, pwd) {
         </button>
       </form>
 
-      <p class="muted" style="margin-top: 14px">演示账号：</p>
+      <p class="muted" style="margin-top: 14px">演示账号（点击快捷填入）：</p>
       <div class="row">
         <button class="plain btn" @click="fill('admin', 'admin123')">管理员 admin</button>
         <button class="plain btn" @click="fill('s001', 'student123')">学生 s001</button>
+        <button class="plain btn" @click="fill('s002', 'student123')">学生 s002</button>
       </div>
+      <p class="muted" style="margin-top: 10px; font-size: 12px">
+        全部学生账号：s001 张 / s002 李 / s003 王 / s004 赵 / s005 钱，口令均为 student123
+      </p>
     </div>
   </div>
 </template>

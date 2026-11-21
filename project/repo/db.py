@@ -196,6 +196,7 @@ DEMO_ACTIVITIES = [
         location="体育馆 2 号场",
         capacity=2,
         policy_type=PolicyType.DIRECT,
+        waitlist_capacity=2,
         created_at=now_iso(),
     ),
     Activity(
@@ -208,32 +209,72 @@ DEMO_ACTIVITIES = [
         policy_type=PolicyType.REVIEW,
         created_at=now_iso(),
     ),
+    Activity(
+        activity_id="a003",
+        title="校园歌手大赛",
+        category="文艺",
+        start_at="2026-12-18T19:00:00",
+        location="大学生活动中心",
+        capacity=50,
+        policy_type=PolicyType.REVIEW,
+        created_at=now_iso(),
+    ),
+    Activity(
+        activity_id="a004",
+        title="人工智能前沿讲座",
+        category="学术",
+        start_at="2026-12-10T14:00:00",
+        location="图书馆报告厅",
+        capacity=120,
+        policy_type=PolicyType.DIRECT,
+        created_at=now_iso(),
+    ),
+    Activity(
+        activity_id="a005",
+        title="摄影展志愿者招募（限额 3 人）",
+        category="志愿",
+        start_at="2026-12-08T09:00:00",
+        location="图书馆一层",
+        capacity=3,
+        policy_type=PolicyType.DIRECT,
+        waitlist_capacity=3,
+        created_at=now_iso(),
+    ),
+    Activity(
+        activity_id="a006",
+        title="读书会（仅 1 个名额）",
+        category="社团",
+        start_at="2026-12-15T18:30:00",
+        location="图书馆研讨室 3",
+        capacity=1,
+        policy_type=PolicyType.DIRECT,
+        waitlist_capacity=2,
+        created_at=now_iso(),
+    ),
 ]
 
 
 def seed(conn: sqlite3.Connection) -> None:
-    """种子数据：学生账号按需补齐（可重复执行）；示例活动仅在空库时写入。"""
-    empty = conn.execute("SELECT COUNT(*) AS n FROM students").fetchone()["n"] == 0
+    """种子数据：学生与示例活动均按 id 幂等补种，已有数据不会被覆盖或重复。"""
     for student_id, name, role, password in DEMO_STUDENTS:
         conn.execute(
             "INSERT OR IGNORE INTO students(student_id, name, role, password_hash) VALUES (?,?,?,?)",
             (student_id, name, role.value, hash_password(password)),
         )
-    if empty:
-        for activity in DEMO_ACTIVITIES:
-            conn.execute(
-                """INSERT INTO activities(activity_id,title,category,start_at,location,capacity,policy_type,waitlist_capacity,created_at,deleted_at)
-                   VALUES (?,?,?,?,?,?,?,?,?,NULL)""",
-                (
-                    activity.activity_id,
-                    activity.title,
-                    activity.category,
-                    activity.start_at,
-                    activity.location,
-                    activity.capacity,
-                    activity.policy_type.value,
-                    activity.waitlist_capacity,
-                    activity.created_at,
-                ),
-            )
+    for activity in DEMO_ACTIVITIES:
+        conn.execute(
+            """INSERT OR IGNORE INTO activities(activity_id,title,category,start_at,location,capacity,policy_type,waitlist_capacity,created_at,deleted_at)
+               VALUES (?,?,?,?,?,?,?,?,?,NULL)""",
+            (
+                activity.activity_id,
+                activity.title,
+                activity.category,
+                activity.start_at,
+                activity.location,
+                activity.capacity,
+                activity.policy_type.value,
+                activity.waitlist_capacity,
+                activity.created_at,
+            ),
+        )
     conn.commit()
