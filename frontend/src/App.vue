@@ -11,13 +11,18 @@ import MessagesView from './views/MessagesView.vue'
 import AdminView from './views/AdminView.vue'
 
 const tabs = computed(() => {
-  const base = [
+  if (isAdmin()) {
+    return [
+      { key: 'activities', label: '活动' },
+      { key: 'messages', label: '消息', badge: state.unread },
+      { key: 'admin', label: '管理' },
+    ]
+  }
+  return [
     { key: 'activities', label: '活动' },
     { key: 'mine', label: '我的报名' },
     { key: 'messages', label: '消息', badge: state.unread },
   ]
-  if (isAdmin()) base.push({ key: 'admin', label: '管理' })
-  return base
 })
 
 const current = computed(() => state.view.name)
@@ -73,7 +78,7 @@ defineExpose({ refreshUnread })
     <main class="layout">
       <ActivityListView v-if="current === 'activities'" />
       <ActivityDetailView v-else-if="current === 'detail'" :activity-id="state.view.params.id" />
-      <MyRegistrationsView v-else-if="current === 'mine'" />
+      <MyRegistrationsView v-else-if="current === 'mine' && !isAdmin()" />
       <MessagesView v-else-if="current === 'messages'" @read="refreshUnread" />
       <AdminView v-else-if="current === 'admin'" />
     </main>
