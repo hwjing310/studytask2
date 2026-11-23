@@ -1,4 +1,4 @@
-base=http://127.0.0.1:8060
+base=http://127.0.0.1:8080
 PASS  管理员登录 -> 200
 PASS  学生A登录 -> 200
 PASS  学生B登录 -> 200
@@ -9,7 +9,7 @@ PASS  C1 剩余名额=2
 PASS  C2 学生A报名直接型 -> 201
 PASS  C2 状态=APPROVED
 PASS  C2 学生A消息列表 -> 200
-PASS  C2 收到 1 条通知
+PASS  C2 收到 1 条新通知
 PASS  C3 重复报名被拒 -> 409
 PASS  C3 错误码=ALREADY_REGISTERED
 PASS  C4 学生B报名成功 -> 201
@@ -25,7 +25,7 @@ PASS  C5 待审核=1 已通过=0 剩余=2
 PASS  C6 批准 -> 200
 PASS  C6 状态=APPROVED
 PASS  C6 学生A消息 -> 200
-PASS  C6 累计 3 条消息（报名通过 + 待审核 + 审核通过）
+PASS  C6 累计新增 3 条消息（报名通过 + 待审核 + 审核通过）
 PASS  C7 学生B报名审核型 -> 201
 PASS  C7 拒绝 -> 200
 PASS  C7 状态=REJECTED
@@ -72,6 +72,10 @@ PASS  CR-02 候补自动补位（approved=1, waitlisted=0）
 PASS  CR-02 已通过不可再转候补 -> 409
 PASS  CR-02 管理员不可报名 -> 403
 PASS  CR-02 错误码=ADMIN_CANNOT_REGISTER
+PASS  CR-03 管理员查看名单 -> 200
+PASS  CR-03 名单含 approved/waitlisted/pending
+PASS  CR-03 已通过名单含学生姓名
+PASS  CR-03 学生不能看名单 -> 403
 PASS  E1 活动已开始报名被拒 -> 201
 PASS  E1 已开始活动不可报名 -> 409
 PASS  E3 非本人取消失败 -> 403
@@ -84,4 +88,4 @@ PASS  E8 学生访问待审核列表被拒 -> 403
 PASS  软删除活动 -> 200
 PASS  删除后详情 404 -> 404
 
-通过 84，失败 0
+通过 88，失败 0

@@ -10,6 +10,7 @@ const stats = ref(null)
 const error = ref('')
 const busy = ref(false)
 const mine = ref(null)
+const participants = ref(null)
 
 const STATUS_LABEL = {
   PENDING: '待审核',
@@ -27,6 +28,7 @@ const hasWaitlist = computed(() => {
 })
 
 const isStudent = computed(() => state.user?.role === 'STUDENT')
+const isAdmin = computed(() => state.user?.role === 'ADMIN')
 const hasActiveRegistration = computed(() => Boolean(mine.value && ACTIVE_STATUS.includes(mine.value.status)))
 
 async function loadMine() {
@@ -48,8 +50,21 @@ async function load() {
     activity.value = await get(`/activities/${props.activityId}`)
     stats.value = await get(`/activities/${props.activityId}/stats`)
     await loadMine()
+    await loadParticipants()
   } catch (err) {
     error.value = err.message
+  }
+}
+
+async function loadParticipants() {
+  if (!isAdmin.value) {
+    participants.value = null
+    return
+  }
+  try {
+    participants.value = await get(`/activities/${props.activityId}/participants`)
+  } catch {
+    participants.value = null
   }
 }
 
@@ -142,6 +157,69 @@ watch(() => props.activityId, load)
         </div>
       </div>
 
+      <div v-if="isAdmin && participants" class="card" style="margin: 12px 0 0; background: #fbfcff">
+        <h3 style="font-size: 15px; margin-bottom: 8px">报名名单</h3>
+
+        <div>
+          <div class="row">
+            <strong>已通过（{{ participants.approved.length }}）</strong>
+            <span class="muted">报名成功的学生</span>
+          </div>
+          <div v-if="participants.approved.length === 0" class="muted" style="padding: 6px 0">暂无</div>
+          <div
+            v-for="p in participants.approved"
+            :key="p.registration_id"
+            class="row"
+            style="border-top: 1px solid var(--line); padding: 8px 0"
+          >
+            <span><strong>{{ p.student_name }}</strong></span>
+            <span class="muted">{{ p.student_id }}</span>
+            <span class="grow"></span>
+            <span class="status APPROVED">已通过</span>
+            <span class="muted">{{ p.updated_at.replace('T', ' ') }}</span>
+          </div>
+        </div>
+
+        <div style="margin-top: 14px">
+          <div class="row">
+            <strong>候补（{{ participants.waitlisted.length }}）</strong>
+            <span class="muted">按位次排队，名额释放自动补位</span>
+          </div>
+          <div v-if="participants.waitlisted.length === 0" class="muted" style="padding: 6px 0">暂无</div>
+          <div
+            v-for="p in participants.waitlisted"
+            :key="p.registration_id"
+            class="row"
+            style="border-top: 1px solid var(--line); padding: 8px 0"
+          >
+            <span><strong>{{ p.student_name }}</strong></span>
+            <span class="muted">{{ p.student_id }}</span>
+            <span class="grow"></span>
+            <span class="status WAITLISTED">候补第 {{ p.waitlist_position }} 位</span>
+            <span class="muted">{{ p.created_at.replace('T', ' ') }}</span>
+          </div>
+        </div>
+
+        <div v-if="participants.pending.length" style="margin-top: 14px">
+          <div class="row">
+            <strong>待审核（{{ participants.pending.length }}）</strong>
+            <span class="muted">在「管理」页批准 / 转候补 / 拒绝</span>
+          </div>
+          <div
+            v-for="p in participants.pending"
+            :key="p.registration_id"
+            class="row"
+            style="border-top: 1px solid var(--line); padding: 8px 0"
+          >
+            <span><strong>{{ p.student_name }}</strong></span>
+            <span class="muted">{{ p.student_id }}</span>
+            <span class="grow"></span>
+            <span class="status PENDING">待审核</span>
+            <span class="muted">{{ p.created_at.replace('T', ' ') }}</span>
+          </div>
+        </div>
+      </div>
+
       <div class="row" style="margin-top: 16px">
         <button
           v-if="!hasActiveRegistration && isStudent"
@@ -151,7 +229,7 @@ watch(() => props.activityId, load)
         >
           {{ busy ? '提交中…' : (activity.open ? '报名' : (hasWaitlist ? '加入候补' : '已截止')) }}
         </button>
-        <button class="btn plain" @click="go('mine')">我的报名</button>
+        <button v-if="isStudent" class="btn plain" @click="go('mine')">我的报名</button>
         <span v-if="isStudent" class="muted">同一活动只能有一条有效报名</span>
         <span v-else class="muted">管理员账号不参与报名，请用学生账号演示</span>
       </div>

@@ -133,6 +133,14 @@ def activity_stats(req: Request) -> Response:
     return json_body(app.activities.stats(req.params["activity_id"]))
 
 
+@route("GET", r"/api/activities/(?P<activity_id>[^/]+)/participants")
+def activity_participants(req: Request) -> Response:
+    app: App = req_app(req)
+    user = require_user(req)
+    app.auth.require_admin(user)
+    return json_body(app.registrations.participants(req.params["activity_id"]))
+
+
 @route("POST", r"/api/activities")
 def create_activity(req: Request) -> Response:
     app: App = req_app(req)

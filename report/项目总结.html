@@ -69,6 +69,7 @@ table, pre, blockquote { page-break-inside: avoid; }
 <h3>4.2 前端</h3>
 <p>Vue 3 + Vite（JavaScript），6 个视图：登录、活动列表、活动详情、我的报名、站内消息、管理端。<code>api.js</code> 统一封装 Bearer Token 与错误体；开发期由 Vite 代理 <code>/api</code> 到 8000，生产期由后端托管 <code>dist/</code>，实现单进程单端口部署。</p>
 <p>为避免「状态藏在二级页面」，活动详情页直接回显<strong>我的报名状态</strong>（待审核 / 已通过 / 已拒绝 / 已取消 / 候补第 N 位），并按状态切换按钮：有效报名显示「取消报名 / 取消候补」，终态显示「可重新报名」。</p>
+<p>管理员视角另有「报名名单」卡片：已通过（报名成功）、候补（按位次）、待审核三组，含姓名与学号，方便现场核对。</p>
 <h3>4.3 前端构建与部署形态</h3>
 <table><thead><tr><th>形态</th><th>验证结果</th></tr></thead><tbody><tr><td>开发（Vite 5173）</td><td>页面加载 <code>/@vite/client</code>；<code>/api/activities</code> 经代理返回真实数据</td></tr><tr><td>生产（后端 8000）</td><td><code>/</code> 返回构建后 <code>index.html</code>；<code>/assets/*.js</code> 200 且 <code>Content-Type</code> 正确</td></tr></tbody></table>
 <h2>5. 测试与验收</h2>

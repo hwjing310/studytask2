@@ -33,6 +33,7 @@ test_review_register_pending_does_not_consume_capacity (test_registration_servic
 test_started_activity_cannot_register (test_registration_service.RegistrationServiceTest.test_started_activity_cannot_register) ... ok
 test_data_survives_restart (test_restart.RestartConsistencyTest.test_data_survives_restart) ... ok
 test_admin_cannot_register (test_waitlist.AdminWaitlistTest.test_admin_cannot_register) ... ok
+test_participants_lists_approved_waitlist_pending (test_waitlist.AdminWaitlistTest.test_participants_lists_approved_waitlist_pending) ... ok
 test_waitlist_full (test_waitlist.AdminWaitlistTest.test_waitlist_full) ... ok
 test_waitlist_only_for_pending (test_waitlist.AdminWaitlistTest.test_waitlist_only_for_pending) ... ok
 test_waitlist_pending_and_autoset_capacity (test_waitlist.AdminWaitlistTest.test_waitlist_pending_and_autoset_capacity) ... ok
@@ -47,8 +48,8 @@ test_waitlist_full (test_waitlist.WaitlistTest.test_waitlist_full) ... ok
 test_waitlisted_counts_as_active (test_waitlist.WaitlistTest.test_waitlisted_counts_as_active) ... ok
 
 ----------------------------------------------------------------------
-Ran 46 tests in 26.764s
+Ran 47 tests in 22.853s
 
 OK
 
-运行用例：46，失败：0，错误：0，跳过：0，耗时：26.8s
+运行用例：47，失败：0，错误：0，跳过：0，耗时：22.8s

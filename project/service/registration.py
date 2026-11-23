@@ -48,6 +48,32 @@ class RegistrationService:
             rows = self._registrations.list_pending(activity_id=None)
         return [self._decorate(r, with_student=True) for r in rows]
 
+    def participants(self, activity_id: str) -> dict:
+        """管理员视角：某活动的已通过 / 候补 / 待审核名单。"""
+        activity = self._activities.get(activity_id)
+        if activity is None:
+            raise NotFoundError("活动不存在或已下架", code="ACTIVITY_NOT_FOUND")
+
+        def rows(status: RegistrationStatus) -> list[dict]:
+            items = [
+                self._decorate(r, with_student=True)
+                for r in self._registrations.list_by_activity_status(activity_id, status)
+            ]
+            if status is RegistrationStatus.WAITLISTED:
+                items.sort(key=lambda x: (x.get("waitlist_position") or 0, x["created_at"]))
+            else:
+                items.sort(key=lambda x: x["updated_at"], reverse=True)
+            return items
+
+        return {
+            "activity_id": activity_id,
+            "title": activity.title,
+            "capacity": activity.capacity,
+            "approved": rows(RegistrationStatus.APPROVED),
+            "waitlisted": rows(RegistrationStatus.WAITLISTED),
+            "pending": rows(RegistrationStatus.PENDING),
+        }
+
     # ---------------- 命令 ----------------
     def register(self, student: Student, activity_id: str) -> dict:
         if student.role is Role.ADMIN:

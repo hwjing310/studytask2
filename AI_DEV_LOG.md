@@ -174,6 +174,16 @@
 - 验证：单测 46/46（新增 5 例）、冒烟 84/84（新增 14 条断言）；公网实测「转候补→位次 1→自动补成上限 1→取消后自动通过→管理员报名 403」全部符合预期。
 - 影响文件：`project/service/registration.py`、`project/web/server.py`、`frontend/src/views/{AdminView,ActivityDetailView}.vue`、`tests/{test_waitlist,smoke_api}.py`、`docs/{change-request,test-cases}.md`、`README.md`
 
+### 2026-11-23 · CR-03：管理员在活动详情查看报名/候补名单
+- 反馈：详情页只有统计数字，管理员看不到具体是哪些学生。
+- 改动：
+  1. `RegistrationService.participants()` 返回 `approved / waitlisted / pending` 三组，带 `student_name`、`student_id`；候补按位次升序，其余按最近更新时间倒序；
+  2. 新接口 `GET /api/activities/{id}/participants`（仅管理员，学生 403）；
+  3. 详情页管理员视角新增「报名名单」卡片：已通过（报名成功）、候补（第 N 位）、待审核；并移除管理员的「我的报名」按钮；
+  4. `smoke_api.py` 的 C2/C6 消息计数改为**基线增量**，脚本可重复执行（此前同一库二次运行会失败）。
+- 验证：单测 47/47；冒烟 88/88（连续两次，均为 0 失败）；公网实测「数字建模比赛」返回 已通过 1 人（王同学）、候补 2 人（赵 1 / 钱 2）。
+- 影响文件：`project/service/registration.py`、`project/web/server.py`、`frontend/src/views/ActivityDetailView.vue`、`tests/{test_waitlist,smoke_api}.py`、`docs/*`、`README.md`
+
 ---
 
 <!-- 后续阶段在此追加 -->

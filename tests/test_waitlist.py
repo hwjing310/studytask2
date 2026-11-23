@@ -229,6 +229,23 @@ class AdminWaitlistTest(unittest.TestCase):
             self.svc.register(self.admin, act["activity_id"])
         self.assertEqual(getattr(ctx.exception, "code", None), "ADMIN_CANNOT_REGISTER")
 
+    def test_participants_lists_approved_waitlist_pending(self):
+        act = self._review_activity(capacity=2, waitlist=2)
+        reg1 = self.svc.register(self.env.student("s001"), act["activity_id"])
+        self.svc.approve(self.admin, reg1["registration_id"])
+
+        reg2 = self.svc.register(self.env.student("s002"), act["activity_id"])
+        self.svc.waitlist(self.admin, reg2["registration_id"])
+
+        reg3 = self.svc.register(self.env.student("s003"), act["activity_id"])
+
+        data = self.svc.participants(act["activity_id"])
+        self.assertEqual([p["student_name"] for p in data["approved"]], ["张同学"])
+        self.assertEqual([p["waitlist_position"] for p in data["waitlisted"]], [1])
+        self.assertEqual(data["waitlisted"][0]["student_name"], "李同学")
+        self.assertEqual([p["student_name"] for p in data["pending"]], ["王同学"])
+        self.assertEqual(reg3["status"], "PENDING")
+
 
 if __name__ == "__main__":
     unittest.main()

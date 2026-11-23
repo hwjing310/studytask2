@@ -79,6 +79,10 @@ def main() -> int:
                        {"username": "s003", "password": "student123"})
     at, t1, t2, t3 = admin["token"], s1["token"], s2["token"], s3["token"]
 
+    # 以当前消息数为基线，保证脚本可重复执行（同一库多次跑不会因累计计数失败）
+    _, msgs0 = call("GET", "/api/messages", None, t1)
+    base1 = len(msgs0["items"])
+
     expect_status("错误口令被拒", "POST", "/api/login", 401,
                   {"username": "admin", "password": "wrong"})
 
@@ -94,7 +98,7 @@ def main() -> int:
     r1 = expect_status("C2 学生A报名直接型", "POST", f"/api/activities/{aid}/registrations", 201, {}, t1)
     check("C2 状态=APPROVED", r1.get("status") == "APPROVED", str(r1))
     msgs = expect_status("C2 学生A消息列表", "GET", "/api/messages", 200, None, t1)
-    check("C2 收到 1 条通知", len(msgs["items"]) == 1, str(msgs))
+    check("C2 收到 1 条新通知", len(msgs["items"]) == base1 + 1, str(len(msgs["items"])))
 
     # ---------- C3 重复报名 ----------
     dup = expect_status("C3 重复报名被拒", "POST", f"/api/activities/{aid}/registrations", 409, {}, t1)
@@ -125,7 +129,7 @@ def main() -> int:
     ap = expect_status("C6 批准", "POST", f"/api/registrations/{rp['registration_id']}/approve", 200, {}, at)
     check("C6 状态=APPROVED", ap.get("status") == "APPROVED", str(ap))
     msgs1 = expect_status("C6 学生A消息", "GET", "/api/messages", 200, None, t1)
-    check("C6 累计 3 条消息（报名通过 + 待审核 + 审核通过）", len(msgs1["items"]) == 3, str(msgs1))
+    check("C6 累计新增 3 条消息（报名通过 + 待审核 + 审核通过）", len(msgs1["items"]) == base1 + 3, str(len(msgs1["items"])))
 
     # ---------- C7 拒绝 ----------
     rp2 = expect_status("C7 学生B报名审核型", "POST", f"/api/activities/{rid_act}/registrations", 201, {}, t2)
@@ -214,6 +218,16 @@ def main() -> int:
                               f"/api/activities/{cr2_id}/registrations", 403, {}, at)
     check("CR-02 错误码=ADMIN_CANNOT_REGISTER",
           (admin_reg or {}).get("error", {}).get("code") == "ADMIN_CANNOT_REGISTER", str(admin_reg))
+
+    # ---------- CR-03 管理员查看活动名单 ----------
+    parts = expect_status("CR-03 管理员查看名单", "GET",
+                          f"/api/activities/{cr2_id}/participants", 200, None, at)
+    check("CR-03 名单含 approved/waitlisted/pending",
+          all(k in parts for k in ("approved", "waitlisted", "pending")), str(parts))
+    check("CR-03 已通过名单含学生姓名",
+          bool(parts["approved"]) and bool(parts["approved"][0].get("student_name")), str(parts["approved"]))
+    expect_status("CR-03 学生不能看名单", "GET",
+                  f"/api/activities/{cr2_id}/participants", 403, None, t1)
 
     # ---------- 边界 ----------
     expect_status("E1 活动已开始报名被拒", "POST", "/api/activities", 201,
