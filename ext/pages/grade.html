@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>年级限定配置 · CampusEvent</title>
+<style>
+  :root { --bg:#f5f6f8; --card:#fff; --ink:#1f2430; --muted:#6b7280; --line:#e5e7eb; --brand:#2563eb; --danger:#dc2626; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:"Microsoft YaHei","Segoe UI",system-ui,sans-serif; }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 24px 16px 60px; }
+  .top { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+  .top h1 { font-size:20px; margin:0; }
+  .top a { color:var(--brand); text-decoration:none; font-size:14px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin:14px 0; }
+  .card h2 { font-size:15px; margin:0 0 10px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th,td { border-bottom:1px solid var(--line); padding:8px 6px; text-align:left; }
+  th { color:var(--muted); font-weight:600; }
+  .muted { color:var(--muted); font-size:13px; }
+  .tag { display:inline-block; padding:2px 8px; border-radius:999px; background:#eef2ff; color:#3730a3; font-size:12px; }
+  .tag.limited { background:#fef3c7; color:#92400e; }
+  button { border:1px solid var(--brand); background:var(--brand); color:#fff; padding:6px 12px; border-radius:8px; cursor:pointer; font-size:13px; }
+  button.plain { background:#fff; color:var(--brand); }
+  button.danger { border-color:var(--danger); background:var(--danger); }
+  button[disabled] { opacity:.5; cursor:not-allowed; }
+  select,input { padding:6px 8px; border:1px solid var(--line); border-radius:8px; font-size:13px; background:#fff; }
+  .alert { padding:10px 12px; border-radius:8px; font-size:14px; margin:10px 0; }
+  .alert.error { background:#fef2f2; color:#991b1b; border:1px solid #fecaca; }
+  .alert.ok { background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; }
+  .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>年级限定报名（CR-01 扩展）</h1>
+    <span class="muted" id="who"></span>
+    <a href="/" style="margin-left:auto">← 返回主站</a>
+  </div>
+
+  <div id="msg"></div>
+
+  <div class="card">
+    <h2>活动年级规则</h2>
+    <p class="muted">仅「直接报名」型活动可设置；年级范围默认 2–3（大二/大三）。未设置的活动保持原有行为。</p>
+    <div class="row" style="margin-bottom:10px">
+      <select id="activitySelect" style="min-width:280px"></select>
+      <label class="muted">年级从</label>
+      <select id="minGrade">
+        <option value="1">大一</option><option value="2" selected>大二</option>
+        <option value="3">大三</option><option value="4">大四</option>
+      </select>
+      <label class="muted">到</label>
+      <select id="maxGrade">
+        <option value="1">大一</option><option value="2">大二</option>
+        <option value="3" selected>大三</option><option value="4">大四</option>
+      </select>
+      <button id="saveRule">保存规则</button>
+      <button id="clearRule" class="danger">取消限定</button>
+    </div>
+    <table>
+      <thead><tr><th>活动</th><th>类型</th><th>容量</th><th>年级规则</th></tr></thead>
+      <tbody id="ruleRows"><tr><td colspan="4" class="muted">加载中…</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>学生年级</h2>
+    <p class="muted">年级用于判断能否报名年级限定活动；默认：s001 大一、s002 大二、s003 大三、s004 大四、s005 大二。</p>
+    <table>
+      <thead><tr><th>学号</th><th>姓名</th><th>角色</th><th>年级</th><th></th></tr></thead>
+      <tbody id="studentRows"><tr><td colspan="5" class="muted">加载中…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const TOKEN_KEY = 'ce_token';
+const token = localStorage.getItem(TOKEN_KEY) || '';
+
+function show(text, kind = 'ok') {
+  document.getElementById('msg').innerHTML =
+    `<div class="alert ${kind === 'error' ? 'error' : 'ok'}">${text}</div>`;
+  setTimeout(() => { const m = document.getElementById('msg'); if (m) m.innerHTML = ''; }, 3000);
+}
+
+async function api(path, options = {}) {
+  const headers = { Accept: 'application/json' };
+  if (options.body !== undefined) headers['Content-Type'] = 'application/json; charset=utf-8';
+  if (token) headers.Authorization = 'Bearer ' + token;
+  const res = await fetch(path, {
+    method: options.method || 'GET',
+    headers,
+    body: options.body === undefined ? undefined : JSON.stringify(options.body),
+  });
+  const text = await res.text();
+  const data = text ? JSON.parse(text) : null;
+  if (!res.ok) {
+    const err = new Error((data && data.error && data.error.message) || ('请求失败 ' + res.status));
+    err.status = res.status;
+    throw err;
+  }
+  return data;
+}
+
+const GRADE_LABEL = { 1: '大一', 2: '大二', 3: '大三', 4: '大四' };
+let activities = [];
+
+function selectOptions(el, selected) {
+  el.innerHTML = Object.keys(GRADE_LABEL)
+    .map((g) => `<option value="${g}" ${String(g) === String(selected) ? 'selected' : ''}>${GRADE_LABEL[g]}</option>`)
+    .join('');
+}
+
+async function loadActivities() {
+  const data = await api('/api/ext/grade/rules');
+  activities = data.items;
+  const sel = document.getElementById('activitySelect');
+  sel.innerHTML = activities
+    .filter((a) => a.policy_type === 'DIRECT')
+    .map((a) => `<option value="${a.activity_id}">${a.title}</option>`)
+    .join('');
+
+  const rows = activities.map((a) => {
+    const rule = a.grade_rule;
+    const tag = rule
+      ? `<span class="tag limited">仅限 ${rule.label}</span>`
+      : `<span class="tag">不限</span>`;
+    const type = a.policy_type === 'DIRECT' ? '直接报名' : '审核型';
+    return `<tr><td>${a.title}</td><td>${type}</td><td>${a.capacity}</td><td>${tag}</td></tr>`;
+  });
+  document.getElementById('ruleRows').innerHTML = rows.join('') || '<tr><td colspan="4" class="muted">暂无活动</td></tr>';
+}
+
+async function loadStudents() {
+  const data = await api('/api/ext/grade/students');
+  const rows = data.items.map((s) => {
+    const opts = Object.keys(GRADE_LABEL)
+      .map((g) => `<option value="${g}" ${s.grade === Number(g) ? 'selected' : ''}>${GRADE_LABEL[g]}</option>`)
+      .join('');
+    return `<tr>
+      <td>${s.student_id}</td><td>${s.name}</td><td>${s.role === 'ADMIN' ? '管理员' : '学生'}</td>
+      <td><select id="grade-${s.student_id}">${opts}</select></td>
+      <td><button class="plain" onclick="saveGrade('${s.student_id}')">保存</button></td>
+    </tr>`;
+  });
+  document.getElementById('studentRows').innerHTML = rows.join('');
+}
+
+async function saveGrade(studentId) {
+  try {
+    const grade = Number(document.getElementById('grade-' + studentId).value);
+    await api('/api/ext/grade/students/' + studentId, { method: 'PUT', body: { grade } });
+    show(`${studentId} 年级已更新为 ${GRADE_LABEL[grade]}`);
+    await loadStudents();
+  } catch (e) { show(e.message, 'error'); }
+}
+
+document.getElementById('saveRule').onclick = async () => {
+  const activityId = document.getElementById('activitySelect').value;
+  if (!activityId) return show('请先选择活动', 'error');
+  const min = Number(document.getElementById('minGrade').value);
+  const max = Number(document.getElementById('maxGrade').value);
+  try {
+    await api('/api/ext/grade/rules/' + activityId, { method: 'PUT', body: { min_grade: min, max_grade: max } });
+    show('规则已保存');
+    await loadActivities();
+  } catch (e) { show(e.message, 'error'); }
+};
+
+document.getElementById('clearRule').onclick = async () => {
+  const activityId = document.getElementById('activitySelect').value;
+  if (!activityId) return show('请先选择活动', 'error');
+  try {
+    await api('/api/ext/grade/rules/' + activityId, { method: 'DELETE' });
+    show('已取消年级限定');
+    await loadActivities();
+  } catch (e) { show(e.message, 'error'); }
+};
+
+(async function init() {
+  if (!token) {
+    document.getElementById('msg').innerHTML =
+      '<div class="alert error">未检测到登录状态，请先在 <a href="/">主站</a> 用管理员账号登录后再打开本页。</div>';
+    return;
+  }
+  try {
+    const me = await api('/api/ext/grade/me');
+    document.getElementById('who').textContent = `${me.name}（${me.grade_label}）`;
+    await loadActivities();
+    await loadStudents();
+  } catch (e) {
+    show(e.status === 403 ? '需要管理员账号才能配置年级规则' : e.message, 'error');
+  }
+})();
+</script>
+</body>
+</html>

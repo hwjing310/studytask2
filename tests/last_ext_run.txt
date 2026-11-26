@@ -1,0 +1,35 @@
+base=http://127.0.0.1:8090
+PASS  管理员登录 -> 200
+PASS  大一学生登录 -> 200
+PASS  大二学生登录 -> 200
+PASS  大四学生登录 -> 200
+PASS  重置 s001 年级=大一 -> 200
+PASS  重置 s004 年级=大四 -> 200
+PASS  创建直接型活动 -> 201
+PASS  CR1 设置年级规则 -> 200
+PASS  CR1 规则标签=大二、大三
+PASS  活动列表 -> 200
+PASS  CR1 列表含 grade_rule
+PASS  CR1-03 大一报名被拒 -> 409
+PASS  CR1-03 错误码=GRADE_NOT_ALLOWED
+PASS  CR1-03 提示含年级
+PASS  CR1-04 大四报名被拒 -> 409
+PASS  CR1-01 大二报名通过 -> 201
+PASS  CR1-01 状态=APPROVED
+PASS  管理员查看学生年级 -> 200
+PASS  年级=2（大二）
+PASS  学生无权查看年级表 -> 403
+PASS  修改 s001 年级 -> 200
+PASS  再建活动 -> 201
+PASS  设置规则2 -> 200
+PASS  改年级后可报名 -> 201
+PASS  改年级后状态=APPROVED
+PASS  创建审核型活动 -> 201
+PASS  审核型不可设年级规则 -> 400
+PASS  取消规则 -> 200
+PASS  取消后大四可报名 -> 201
+PASS  配置页 /api/ext/pages/grade.html 可访问
+
+通过 30，失败 0
+
+通过 30，失败 0

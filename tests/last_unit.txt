@@ -7,6 +7,18 @@ test_start_at_must_be_iso (test_activity_service.ActivityServiceTest.test_start_
 test_stats_shape (test_activity_service.ActivityServiceTest.test_stats_shape) ... ok
 test_title_required (test_activity_service.ActivityServiceTest.test_title_required) ... ok
 test_update_capacity_below_approved_conflicts (test_activity_service.ActivityServiceTest.test_update_capacity_below_approved_conflicts) ... ok
+test_activity_list_exposes_grade_rule (test_grade_rule.GradeRuleTest.test_activity_list_exposes_grade_rule) ... ok
+test_capacity_still_enforced (test_grade_rule.GradeRuleTest.test_capacity_still_enforced) ... ok
+test_duplicate_still_enforced (test_grade_rule.GradeRuleTest.test_duplicate_still_enforced) ... ok
+test_freshman_rejected_with_reason (test_grade_rule.GradeRuleTest.test_freshman_rejected_with_reason) ... ok
+test_grade_change_takes_effect (test_grade_rule.GradeRuleTest.test_grade_change_takes_effect) ... ok
+test_grade_seeded (test_grade_rule.GradeRuleTest.test_grade_seeded) ... ok
+test_junior_allowed (test_grade_rule.GradeRuleTest.test_junior_allowed) ... ok
+test_rule_removed_allows_everyone (test_grade_rule.GradeRuleTest.test_rule_removed_allows_everyone) ... ok
+test_senior_rejected (test_grade_rule.GradeRuleTest.test_senior_rejected) ... ok
+test_sophomore_allowed (test_grade_rule.GradeRuleTest.test_sophomore_allowed) ... ok
+test_started_activity_still_enforced (test_grade_rule.GradeRuleTest.test_started_activity_still_enforced) ... ok
+test_unregistered_grade_rejected (test_grade_rule.GradeRuleTest.test_unregistered_grade_rejected) ... ok
 test_duplicate_event_writes_once (test_notify.InboxNotifierTest.test_duplicate_event_writes_once) ... ok
 test_failure_is_recorded_and_swallowed (test_notify.InboxNotifierTest.test_failure_is_recorded_and_swallowed) ... ok
 test_message_written_on_success (test_notify.InboxNotifierTest.test_message_written_on_success) ... ok
@@ -48,8 +60,8 @@ test_waitlist_full (test_waitlist.WaitlistTest.test_waitlist_full) ... ok
 test_waitlisted_counts_as_active (test_waitlist.WaitlistTest.test_waitlisted_counts_as_active) ... ok
 
 ----------------------------------------------------------------------
-Ran 47 tests in 22.853s
+Ran 59 tests in 32.282s
 
 OK
 
-运行用例：47，失败：0，错误：0，跳过：0，耗时：22.8s
+运行用例：59，失败：0，错误：0，跳过：0，耗时：32.3s
