@@ -17,6 +17,22 @@ CREATE TABLE IF NOT EXISTS ext_activity_grade_rules (
     updated_at  TEXT NOT NULL,
     CHECK (min_grade <= max_grade)
 );
+
+CREATE TABLE IF NOT EXISTS ext_emails (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_id        TEXT NOT NULL UNIQUE,
+    registration_id TEXT NOT NULL,
+    student_id      TEXT NOT NULL,
+    to_addr         TEXT NOT NULL,
+    subject         TEXT NOT NULL,
+    body            TEXT NOT NULL,
+    status          TEXT NOT NULL CHECK (status IN ('SENDING','SENT','FAILED')),
+    error           TEXT,
+    created_at      TEXT NOT NULL,
+    sent_at         TEXT
+);
+
+CREATE INDEX IF NOT EXISTS ix_ext_emails_created ON ext_emails(created_at DESC);
 """
 
 # 演示账号的初始年级：覆盖 CR1-01 ~ CR1-04 的四种情况

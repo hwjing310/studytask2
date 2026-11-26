@@ -117,6 +117,31 @@ def ext_my_grade(req) -> Response:
     )
 
 
+@route("GET", r"/api/ext/emails")
+def ext_list_emails(req) -> Response:
+    _admin(req)
+    app = req_app(req)
+    try:
+        limit = int(req.param("limit") or 50)
+    except ValueError:
+        limit = 50
+    limit = max(1, min(limit, 200))
+    return json_body(
+        {
+            "items": [e.to_dict() for e in app.emails.list_recent(limit)],
+            "stats": app.emails.stats(),
+        }
+    )
+
+
+@route("POST", r"/api/ext/emails/fail-next")
+def ext_arm_email_failure(req) -> Response:
+    _admin(req)
+    app = req_app(req)
+    app.email_sender.arm_failure()
+    return json_body({"armed": True, "message": "下一次邮件发送将模拟失败（用于演示 CR2-03）"})
+
+
 @route("GET", r"/api/ext/pages/(?P<name>[A-Za-z0-9_\-]+\.html)")
 def ext_page(req) -> Response:
     """独立页面（原前端 dist 不变），只允许读取 ext/pages 下的 html。"""
@@ -139,6 +164,8 @@ for _fn in (
     ext_list_students,
     ext_set_student_grade,
     ext_my_grade,
+    ext_list_emails,
+    ext_arm_email_failure,
     ext_page,
 ):
     setattr(_server_module, f"_ext_route_{_fn.__name__}", _fn)

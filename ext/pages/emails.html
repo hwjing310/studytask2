@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>邮件通知记录 · CampusEvent</title>
+<style>
+  :root { --bg:#f5f6f8; --card:#fff; --ink:#1f2430; --muted:#6b7280; --line:#e5e7eb; --brand:#2563eb; --ok:#059669; --warn:#d97706; --danger:#dc2626; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:"Microsoft YaHei","Segoe UI",system-ui,sans-serif; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 24px 16px 60px; }
+  .top { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+  .top h1 { font-size:20px; margin:0; }
+  .top a { color:var(--brand); text-decoration:none; font-size:14px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin:14px 0; }
+  .muted { color:var(--muted); font-size:13px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th,td { border-bottom:1px solid var(--line); padding:8px 6px; text-align:left; vertical-align:top; }
+  th { color:var(--muted); font-weight:600; }
+  .stat { display:flex; gap:22px; margin:6px 0 12px; }
+  .stat b { font-size:18px; display:block; }
+  .stat div { font-size:12px; color:var(--muted); }
+  .pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; }
+  .pill.SENT { background:#d1fae5; color:#065f46; }
+  .pill.FAILED { background:#fee2e2; color:#991b1b; }
+  .pill.SENDING { background:#fef3c7; color:#92400e; }
+  button { border:1px solid var(--brand); background:var(--brand); color:#fff; padding:6px 12px; border-radius:8px; cursor:pointer; font-size:13px; }
+  button.plain { background:#fff; color:var(--brand); }
+  button.warn { border-color:var(--warn); background:var(--warn); }
+  .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .alert { padding:10px 12px; border-radius:8px; font-size:14px; margin:10px 0; }
+  .alert.error { background:#fef2f2; color:#991b1b; border:1px solid #fecaca; }
+  .alert.ok { background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; }
+  .err { color:#991b1b; font-size:12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>邮件通知记录（CR-02）</h1>
+    <span class="muted" id="who"></span>
+    <a href="/" style="margin-left:auto">← 返回主站</a>
+  </div>
+
+  <div id="msg"></div>
+
+  <div class="card">
+    <div class="row">
+      <div class="stat">
+        <div><b id="statTotal">-</b>总记录</div>
+        <div><b id="statSent">-</b>已发送</div>
+        <div><b id="statFailed">-</b>失败</div>
+      </div>
+      <span style="margin-left:auto"></span>
+      <button class="plain" id="refresh">刷新</button>
+      <button class="warn" id="armFail">模拟下一次发送失败</button>
+    </div>
+    <p class="muted">站内信仍会正常写入；这里只记录模拟邮件的发送结果。失败不影响报名状态。</p>
+    <table>
+      <thead><tr><th>时间</th><th>收件人</th><th>主题</th><th>状态</th><th>说明</th></tr></thead>
+      <tbody id="rows"><tr><td colspan="5" class="muted">加载中…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const token = localStorage.getItem('ce_token') || '';
+
+function show(text, kind = 'ok') {
+  document.getElementById('msg').innerHTML =
+    `<div class="alert ${kind === 'error' ? 'error' : 'ok'}">${text}</div>`;
+  setTimeout(() => { document.getElementById('msg').innerHTML = ''; }, 3200);
+}
+
+async function api(path, options = {}) {
+  const headers = { Accept: 'application/json' };
+  if (options.body !== undefined) headers['Content-Type'] = 'application/json; charset=utf-8';
+  if (token) headers.Authorization = 'Bearer ' + token;
+  const res = await fetch(path, {
+    method: options.method || 'GET',
+    headers,
+    body: options.body === undefined ? undefined : JSON.stringify(options.body),
+  });
+  const text = await res.text();
+  const data = text ? JSON.parse(text) : null;
+  if (!res.ok) {
+    const err = new Error((data && data.error && data.error.message) || ('请求失败 ' + res.status));
+    err.status = res.status;
+    throw err;
+  }
+  return data;
+}
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+async function load() {
+  try {
+    const data = await api('/api/ext/emails?limit=100');
+    document.getElementById('statTotal').textContent = data.stats.total;
+    document.getElementById('statSent').textContent = data.stats.sent;
+    document.getElementById('statFailed').textContent = data.stats.failed;
+
+    const rows = data.items.map((e) => `
+      <tr>
+        <td>${esc((e.sent_at || e.created_at).replace('T', ' '))}</td>
+        <td>${esc(e.to_addr)}<div class="muted">${esc(e.student_id)}</div></td>
+        <td>${esc(e.subject)}<div class="muted">${esc(e.body)}</div></td>
+        <td><span class="pill ${e.status}">${e.status === 'SENT' ? '已发送' : (e.status === 'FAILED' ? '失败' : '发送中')}</span></td>
+        <td class="err">${e.error ? esc(e.error) : ''}</td>
+      </tr>`);
+    document.getElementById('rows').innerHTML =
+      rows.join('') || '<tr><td colspan="5" class="muted">暂无记录（先让学生报名一个直接型活动试试）</td></tr>';
+  } catch (e) {
+    show(e.status === 403 ? '需要管理员账号' : e.message, 'error');
+  }
+}
+
+document.getElementById('refresh').onclick = load;
+document.getElementById('armFail').onclick = async () => {
+  try {
+    await api('/api/ext/emails/fail-next', { method: 'POST', body: {} });
+    show('已布置：下一次邮件发送会失败（用于演示 CR2-03）', 'ok');
+  } catch (e) { show(e.message, 'error'); }
+};
+
+(async function init() {
+  if (!token) {
+    document.getElementById('msg').innerHTML =
+      '<div class="alert error">未检测到登录状态，请先在 <a href="/">主站</a> 用管理员账号登录。</div>';
+    return;
+  }
+  try {
+    const me = await api('/api/ext/grade/me');
+    document.getElementById('who').textContent = `${me.name}（${me.grade_label}）`;
+  } catch (e) { /* 学生也能看? 不行：接口 403；保持空 */ }
+  load();
+})();
+</script>
+</body>
+</html>

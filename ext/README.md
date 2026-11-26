@@ -1,6 +1,6 @@
-# ext/ — CR-01 年级限定报名（零侵入扩展）
+# ext/ — CR-01 年级限定 / CR-02 模拟邮件（零侵入扩展）
 
-本目录实现实验二教师隐藏变更单 **CR-01：新增年级限定报名**。
+本目录实现实验二教师隐藏变更单：**CR-01 年级限定报名** 与 **CR-02 模拟邮件通知**。
 
 ## 零修改声明
 
@@ -12,8 +12,10 @@
 | 年级规则 | 新表 `ext_activity_grade_rules(activity_id, min_grade, max_grade)` | 否 |
 | 报名拦截 | `ext/services.py` 继承 `RegistrationService`，仅覆写 `register()` 增加年级校验 | 否（新增类） |
 | 活动数据带规则 | 继承 `ActivityService`，在返回值上补 `grade_rule` 字段 | 否（新增类） |
+| 邮件通知 | `ext/email.py` 新增 `EmailNotifier` 订阅者，在 `run_ext.py` 里挂到原 `EventBus` | 否（新增订阅者） |
+| 邮件记录 | 新表 `ext_emails(event_id UNIQUE, …)`，失败留痕、事件去重 | 否 |
 | 新接口 | `ext/api.py` 用原 `route` 装饰器定义，导入时 `setattr` 注入原 web 模块命名空间，由 `collect_routes()` 自动收录 | 否（运行时注入） |
-| 配置页面 | `ext/pages/grade.html`，由新增路由提供 | 否（原 dist 不动） |
+| 配置页面 | `ext/pages/grade.html`、`ext/pages/emails.html`，由新增路由提供 | 否（原 dist 不动） |
 | 启动 | `run_ext.py` 复刻原装配步骤并替换为扩展服务 | 否（新增入口） |
 
 ## 为什么接口在 `/api/ext/…`
@@ -60,6 +62,8 @@ tools\py.cmd run_ext.py --port 8000
 
 ## 接口
 
+### CR-01 年级规则
+
 | 方法 | 路径 | 说明 |
 |---|---|---|
 | GET | `/api/ext/grade/rules` | 活动列表 + 年级规则（管理员） |
@@ -68,7 +72,24 @@ tools\py.cmd run_ext.py --port 8000
 | GET | `/api/ext/grade/students` | 学生年级列表（管理员） |
 | PUT | `/api/ext/grade/students/{student_id}` | 修改学生年级 `{grade}` |
 | GET | `/api/ext/grade/me` | 当前登录人的年级 |
-| GET | `/api/ext/pages/grade.html` | 独立配置页 |
+| GET | `/api/ext/pages/grade.html` | 年级配置页（独立页面） |
+
+### CR-02 模拟邮件
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| GET | `/api/ext/emails?limit=50` | 最近的邮件记录 + 统计（管理员） |
+| POST | `/api/ext/emails/fail-next` | 布置「下一次发送失败」，用于演示 CR2-03 |
+| GET | `/api/ext/pages/emails.html` | 邮件记录页（独立页面） |
+
+**邮件触发范围**：`APPROVED`（直接报名通过 / 审核通过 / 候补补位）与 `REJECTED`；
+`PENDING`、`WAITLISTED`、`CANCELLED` 不发邮件（站内信仍照常）。
+
+**语义保证**
+
+- 去重：`ext_emails.event_id` 唯一索引 + `INSERT OR IGNORE`，同一事件重复投递只记一条；
+- 失败：只把该行置为 `FAILED` 并记录错误，**不抛出、不回滚报名**；
+- 站内信与邮件相互独立，任一方失败不影响另一方。
 
 ## 行为契约
 
@@ -81,10 +102,11 @@ tools\py.cmd run_ext.py --port 8000
 ## 测试
 
 ```bat
-tools\py.cmd tests\run_tests.py                              :: 59 项单测（其中 12 项 CR-01）
+tools\py.cmd tests\run_tests.py                              :: 65 项单测（CR-01 12 项 + CR-02 6 项）
 tools\py.cmd run_ext.py --port 8090 --db project\data\ext_smoke.db
-tools\py.cmd tests\smoke_ext.py http://127.0.0.1:8090        :: 30 项扩展冒烟
-tools\py.cmd tests\smoke_api.py http://127.0.0.1:8090        :: 88 项原有用例回归（CR1-05）
+tools\py.cmd tests\smoke_ext.py http://127.0.0.1:8090        :: 30 项 CR-01 扩展冒烟
+tools\py.cmd tests\smoke_ext_email.py http://127.0.0.1:8090  :: 28 项 CR-02 邮件冒烟
+tools\py.cmd tests\smoke_api.py http://127.0.0.1:8090        :: 88 项原有用例回归（CR1-05 / CR2-05）
 ```
 
 ## 已知限制
