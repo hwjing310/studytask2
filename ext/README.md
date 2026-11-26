@@ -101,6 +101,9 @@ tools\py.cmd run_ext.py --port 8000
 
 ## 测试
 
+测试脚本按提交要求**不随仓库提交**（本地保留）；验收结果记录在
+`docs/cr01-grade-limit.md` 与 `docs/cr02-email.md`。本地可这样跑：
+
 ```bat
 tools\py.cmd tests\run_tests.py                              :: 65 项单测（CR-01 12 项 + CR-02 6 项）
 tools\py.cmd run_ext.py --port 8090 --db project\data\ext_smoke.db

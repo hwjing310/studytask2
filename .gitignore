@@ -30,6 +30,14 @@ tools/python312.zip
 # 构建与打包产物
 build/
 
+# 测试脚本与运行日志（按提交要求不入库，本地保留）
+tests/support_ext.py
+tests/test_grade_rule.py
+tests/test_email.py
+tests/smoke_ext.py
+tests/smoke_ext_email.py
+tests/last_*.txt
+
 # 部署凭据（绝不入库）
 .vibe/
 .thevibehosting*
