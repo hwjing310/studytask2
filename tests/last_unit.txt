@@ -7,6 +7,12 @@ test_start_at_must_be_iso (test_activity_service.ActivityServiceTest.test_start_
 test_stats_shape (test_activity_service.ActivityServiceTest.test_stats_shape) ... ok
 test_title_required (test_activity_service.ActivityServiceTest.test_title_required) ... ok
 test_update_capacity_below_approved_conflicts (test_activity_service.ActivityServiceTest.test_update_capacity_below_approved_conflicts) ... ok
+test_approve_and_reject_send (test_email.EmailNotifierTest.test_approve_and_reject_send) ... ok
+test_direct_approval_sends_email (test_email.EmailNotifierTest.test_direct_approval_sends_email) ... ok
+test_duplicate_event_sends_once (test_email.EmailNotifierTest.test_duplicate_event_sends_once) ... ok
+test_failure_recorded_but_registration_kept (test_email.EmailNotifierTest.test_failure_recorded_but_registration_kept) ... ok
+test_pending_does_not_send (test_email.EmailNotifierTest.test_pending_does_not_send) ... ok
+test_stats (test_email.EmailNotifierTest.test_stats) ... ok
 test_activity_list_exposes_grade_rule (test_grade_rule.GradeRuleTest.test_activity_list_exposes_grade_rule) ... ok
 test_capacity_still_enforced (test_grade_rule.GradeRuleTest.test_capacity_still_enforced) ... ok
 test_duplicate_still_enforced (test_grade_rule.GradeRuleTest.test_duplicate_still_enforced) ... ok
@@ -60,8 +66,8 @@ test_waitlist_full (test_waitlist.WaitlistTest.test_waitlist_full) ... ok
 test_waitlisted_counts_as_active (test_waitlist.WaitlistTest.test_waitlisted_counts_as_active) ... ok
 
 ----------------------------------------------------------------------
-Ran 59 tests in 32.282s
+Ran 65 tests in 44.611s
 
 OK
 
-运行用例：59，失败：0，错误：0，跳过：0，耗时：32.3s
+运行用例：65，失败：0，错误：0，跳过：0，耗时：44.6s

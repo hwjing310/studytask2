@@ -27,6 +27,7 @@ from project.service.message import MessageService
 from project.web.server import App, build_server
 
 import ext.api  # noqa: F401  导入即完成路由注入
+from ext.email import EmailNotifier, EmailRepository, MockEmailSender
 from ext.rules import GradeRuleRepository, StudentGradeRepository
 from ext.schema import migrate_ext, seed_grades
 from ext.services import GradeAwareActivityService, GradeAwareRegistrationService
@@ -45,6 +46,11 @@ def build_ext_app(db_path: str) -> App:
 
     bus = EventBus()
     bus.subscribe(InboxNotifier(repos.messages, repos.notify_failures))
+
+    # CR-02：邮件订阅者（站内信继续，邮件额外记录；失败只留痕）
+    emails = EmailRepository(conn)
+    email_sender = MockEmailSender()
+    bus.subscribe(EmailNotifier(emails, email_sender))
 
     auth = AuthService(repos.students, repos.tokens)
     activities = GradeAwareActivityService(repos.activities, grades)
@@ -68,6 +74,8 @@ def build_ext_app(db_path: str) -> App:
     )
     app.grades = grades  # 供 ext.api 使用
     app.student_grades = student_grades
+    app.emails = emails
+    app.email_sender = email_sender
     return app
 
 
