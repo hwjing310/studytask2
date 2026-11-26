@@ -78,8 +78,10 @@ tools\py.cmd run_ext.py --port 8000
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
-| GET | `/api/ext/emails?limit=50` | 最近的邮件记录 + 统计（管理员） |
+| GET | `/api/ext/emails?limit=50` | 最近的邮件记录 + 统计 + `armed_failure`（管理员） |
 | POST | `/api/ext/emails/fail-next` | 布置「下一次发送失败」，用于演示 CR2-03 |
+| POST | `/api/ext/emails/fail-cancel` | 取消上述布置（避免后续邮件一直失败） |
+| POST | `/api/ext/emails/test-send` | 直接发一封测试邮件，不依赖报名流程 |
 | GET | `/api/ext/pages/emails.html` | 邮件记录页（独立页面） |
 
 **邮件触发范围**：`APPROVED`（直接报名通过 / 审核通过 / 候补补位）与 `REJECTED`；

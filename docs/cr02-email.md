@@ -105,9 +105,11 @@ CREATE TABLE ext_emails (
 
 | 方法 | 路径 | 权限 | 说明 |
 |---|---|---|---|
-| GET | `/api/ext/emails?limit=50` | 管理员 | 最近记录 + 统计（SENT/FAILED/总数） |
+| GET | `/api/ext/emails?limit=50` | 管理员 | 最近记录 + 统计（SENT/FAILED/总数）+ `armed_failure` 当前是否已布置失败 |
 | POST | `/api/ext/emails/fail-next` | 管理员 | 布置"下一次发送失败"，用于演示 CR2-03 |
-| GET | `/api/ext/pages/emails.html` | 登录用户 | 邮件记录页（状态高亮、一键模拟失败） |
+| POST | `/api/ext/emails/fail-cancel` | 管理员 | 取消上一项布置（避免一直挂着导致后续邮件全部失败） |
+| POST | `/api/ext/emails/test-send` | 管理员 | 直接发一封测试邮件并落库，不依赖报名流程 |
+| GET | `/api/ext/pages/emails.html` | 登录用户 | 邮件记录页（状态高亮、失败布置提示、测试发送） |
 
 ---
 
@@ -156,3 +158,19 @@ CREATE TABLE ext_emails (
 | CR2-05 C1–C10 回归 | 通过（88/88） |
 
 补充边界（单元测试）：待审核不发信、失败后下一次自动恢复、统计计数正确。
+
+---
+
+## 6. 怎么自测（不需要改数据库）
+
+1. 主站用 `admin / admin123` 登录；
+2. 打开 `/api/ext/pages/emails.html`；
+3. 点「发送测试邮件」→ 列表新增一条 `SENT`（收件人 `admin@campus.edu.cn`）；
+4. 点「模拟下一次发送失败」→ 页面顶部出现红色提示「已布置失败」；
+5. 再点「发送测试邮件」→ 新增一条 `FAILED`，说明书写在「说明」列；
+6. 点「取消布置」→ 红色提示消失；
+7. 再点「发送测试邮件」→ 恢复 `SENT`。
+
+**真实链路的验证**（推荐答辩时演示）：用 `s002` 报名一个**直接报名**活动（如「人工智能前沿讲座」，容量 120）→ 报名成功 → 邮件页立刻多一条 `SENT`；再用 `admin` 拒绝某条审核申请 → 多一条「未通过」。
+
+> 注意：只有 `APPROVED` / `REJECTED` 才发邮件。报名「审核型」活动只会进入待审核（只发站内信），「候补」同理——这是设计如此，不是故障。

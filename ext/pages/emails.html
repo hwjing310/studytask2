@@ -43,6 +43,7 @@
   </div>
 
   <div id="msg"></div>
+  <div id="armedBanner"></div>
 
   <div class="card">
     <div class="row">
@@ -53,9 +54,12 @@
       </div>
       <span style="margin-left:auto"></span>
       <button class="plain" id="refresh">刷新</button>
+      <button class="plain" id="testSend">发送测试邮件</button>
       <button class="warn" id="armFail">模拟下一次发送失败</button>
+      <button class="plain" id="cancelFail">取消布置</button>
     </div>
-    <p class="muted">站内信仍会正常写入；这里只记录模拟邮件的发送结果。失败不影响报名状态。</p>
+    <p class="muted">站内信仍会正常写入；这里只记录模拟邮件的发送结果。失败不影响报名状态。<br>
+      只有「报名通过 / 审核通过 / 审核拒绝」会产生邮件；待审核、候补、取消都只发站内信。</p>
     <table>
       <thead><tr><th>时间</th><th>收件人</th><th>主题</th><th>状态</th><th>说明</th></tr></thead>
       <tbody id="rows"><tr><td colspan="5" class="muted">加载中…</td></tr></tbody>
@@ -102,6 +106,10 @@ async function load() {
     document.getElementById('statSent').textContent = data.stats.sent;
     document.getElementById('statFailed').textContent = data.stats.failed;
 
+    document.getElementById('armedBanner').innerHTML = data.armed_failure
+      ? '<div class="alert error">当前已布置「下一次发送失败」：下一封邮件会记为 FAILED。测试完请点「取消布置」。</div>'
+      : '';
+
     const rows = data.items.map((e) => `
       <tr>
         <td>${esc((e.sent_at || e.created_at).replace('T', ' '))}</td>
@@ -118,10 +126,25 @@ async function load() {
 }
 
 document.getElementById('refresh').onclick = load;
+document.getElementById('testSend').onclick = async () => {
+  try {
+    const res = await api('/api/ext/emails/test-send', { method: 'POST', body: {} });
+    show(res.status === 'SENT' ? '测试邮件已发送（SENT）' : `测试邮件失败：${res.error}`, res.status === 'SENT' ? 'ok' : 'error');
+    await load();
+  } catch (e) { show(e.message, 'error'); }
+};
+document.getElementById('cancelFail').onclick = async () => {
+  try {
+    await api('/api/ext/emails/fail-cancel', { method: 'POST', body: {} });
+    show('已取消「模拟失败」布置');
+    await load();
+  } catch (e) { show(e.message, 'error'); }
+};
 document.getElementById('armFail').onclick = async () => {
   try {
     await api('/api/ext/emails/fail-next', { method: 'POST', body: {} });
     show('已布置：下一次邮件发送会失败（用于演示 CR2-03）', 'ok');
+    await load();
   } catch (e) { show(e.message, 'error'); }
 };
 

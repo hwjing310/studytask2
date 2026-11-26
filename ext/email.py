@@ -128,6 +128,9 @@ class MockEmailSender:
     def arm_failure(self) -> None:
         self._fail_next = True
 
+    def disarm(self) -> None:
+        self._fail_next = False
+
     @property
     def failing(self) -> bool:
         return self._fail_next

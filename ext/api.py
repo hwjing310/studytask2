@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import os
+import uuid
 
 from project.domain.errors import NotFoundError, ValidationError
 from project.web.server import Response, json_body, req_app, require_user, route
@@ -130,6 +131,7 @@ def ext_list_emails(req) -> Response:
         {
             "items": [e.to_dict() for e in app.emails.list_recent(limit)],
             "stats": app.emails.stats(),
+            "armed_failure": app.email_sender.failing,
         }
     )
 
@@ -140,6 +142,37 @@ def ext_arm_email_failure(req) -> Response:
     app = req_app(req)
     app.email_sender.arm_failure()
     return json_body({"armed": True, "message": "下一次邮件发送将模拟失败（用于演示 CR2-03）"})
+
+
+@route("POST", r"/api/ext/emails/fail-cancel")
+def ext_cancel_email_failure(req) -> Response:
+    _admin(req)
+    app = req_app(req)
+    app.email_sender.disarm()
+    return json_body({"armed": False, "message": "已取消模拟失败"})
+
+
+@route("POST", r"/api/ext/emails/test-send")
+def ext_test_email(req) -> Response:
+    """发一封测试邮件，便于不依赖报名流程验证邮件链路。"""
+    _admin(req)
+    app = req_app(req)
+    event_id = "test:" + uuid.uuid4().hex[:12]
+    row_id = app.emails.begin(
+        event_id=event_id,
+        registration_id="-",
+        student_id=req.user.student_id,
+        to_addr=f"{req.user.student_id}@campus.edu.cn",
+        subject="测试邮件：模拟发送",
+        body="这是一封由邮件记录页触发的测试邮件，用于验证 MockEmailSender 链路。",
+    )
+    try:
+        app.email_sender.send(f"{req.user.student_id}@campus.edu.cn", "测试邮件：模拟发送", "test")
+    except Exception as exc:  # noqa: BLE001
+        app.emails.mark_failed(row_id, str(exc))
+        return json_body({"status": "FAILED", "error": str(exc), "event_id": event_id})
+    app.emails.mark_sent(row_id)
+    return json_body({"status": "SENT", "event_id": event_id})
 
 
 @route("GET", r"/api/ext/pages/(?P<name>[A-Za-z0-9_\-]+\.html)")
@@ -166,6 +199,8 @@ for _fn in (
     ext_my_grade,
     ext_list_emails,
     ext_arm_email_failure,
+    ext_cancel_email_failure,
+    ext_test_email,
     ext_page,
 ):
     setattr(_server_module, f"_ext_route_{_fn.__name__}", _fn)
